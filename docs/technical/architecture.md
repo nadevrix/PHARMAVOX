@@ -27,6 +27,37 @@ graph TD
 
 ---
 
+## 🕒 Diagrama de Secuencia: Procesamiento Multimodal y Caché
+
+Este diagrama ilustra el flujo de ejecución secuencial cuando un usuario escanea una receta o caja. Detalla cómo **Sergio** integra la verificación de caché de base de datos (**Tarea S-3**) para reducir latencia, y cómo **Alejandro** orquesta la llamada a Gemini (**Tarea A-1**) si el medicamento no está registrado.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Cliente as App Cliente (PC/Movil)
+    participant API as FastAPI Backend
+    participant DB as DB Cache (Sergio)
+    participant Gemini as Gemini AI (Alejandro)
+
+    Cliente->>API: POST /api/v1/scan (imagen de caja o receta)
+    API->>DB: Consultar si el Medicamento ya fue procesado
+    
+    alt Existe en Caché (DB hit)
+        DB-->>API: Retornar metadata y prospecto simplificado
+        Note over API: RNF-1: Respuesta ultra rápida (<1.5s)
+    else No existe en Caché (DB miss)
+        API->>Gemini: API Request (Imagen + System Prompt Multimodal)
+        Note over Gemini: Alejandro: Gemini OCR & AI Parsing
+        Gemini-->>API: Respuesta JSON Estructurada rígida
+        API->>DB: Guardar nuevo Medicamento y estructura visual
+        API->>DB: Registrar en historial de escaneos
+    end
+
+    API-->>Cliente: JSON Response (quick_summary + visual_layout + warning_bullets)
+```
+
+---
+
 ## 🧠 Integración con Google Gemini (Modelos Multimodales)
 
 PharmaVox aprovecha el poder de la API de **Google Gemini** para realizar tareas que tradicionalmente requerían múltiples modelos especializados:
@@ -45,7 +76,7 @@ PharmaVox aprovecha el poder de la API de **Google Gemini** para realizar tareas
 
 El backend de PharmaVox está especialmente diseñado para dar soporte a una **experiencia dual (multimodal)** en dispositivos de escritorio y computadores:
 
-1.  **Respuestas en "Lenguaje Hablado" (Vox Engine):** La API de chat conversacional `/api/v1/ask` estructura un campo específico llamado `voice_response`. Este contiene frases redactadas fonéticamente y optimizadas para lectores de pantalla o síntesis de voz, evitando leer códigos raros o términos que suenen poco naturales al hablar.
+1.  **Respuestas en "Lenguaje Hablado" (Vox Engine):** La API de chat conversacional `/api/v1/ask` estructura un campo específico llamado `voice_response`. Este contiene frases redactadas fonéticamente y optimizadas para lectores de pantalla o síntesis de voz, evitando leer códigos raros o términos que suonen poco naturales al hablar.
 2.  **Estructura Visual de Datos (Visual Desktop Component):** Para aprovechar las pantallas de los computadores, el backend asocia a cada respuesta por voz un conjunto de metadatos visuales (`visual_layout`). Este contiene tarjetas informativas, listados estructurados, íconos semánticos y estados de alerta codificados en JSON. Esto permite que el frontend dibuje interfaces ricas, limpias y legibles al mismo tiempo que el usuario escucha la voz.
 
 ---

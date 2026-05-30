@@ -1,7 +1,28 @@
-# PharmaVox Backend 🎙️💊
-> **El cerebro de inteligencia artificial y voz que simplifica y humaniza el acceso a la información médica.**
+# PharmaVox Backend 🎙️💻💊
+> **El cerebro de Inteligencia Artificial multimodal y voz que hace comprensible y accesible la información médica para todos.**
 
-PharmaVox Backend es un servicio web RESTful de alto rendimiento desarrollado en **Python** con **FastAPI**. Actúa como el núcleo de procesamiento inteligente de PharmaVox, integrando capacidades avanzadas de visión por computadora y modelos de lenguaje de última generación para procesar recetas, prospectos médicos y cajas de medicamentos, transformándolos en flujos interactivos de voz y texto simple estructurado.
+PharmaVox es una plataforma interactiva que transforma los complejos prospectos médicos y recetas físicas en **experiencias auditivas y visuales fluidas**. Este repositorio contiene el **Backend en Python + FastAPI**, diseñado específicamente para actuar como el motor de procesamiento inteligente de PharmaVox.
+
+---
+
+## 📌 Contexto del Proyecto
+
+### ⚠️ La Problemática
+La lectura y correcta interpretación de los prospectos de los medicamentos y recetas médicas presenta desafíos críticos en la sociedad actual:
+*   **Complejidad y Jerga Médica:** El lenguaje altamente clínico y la tipografía diminuta hacen que los prospectos sean casi indescifrables para el ciudadano común.
+*   **Barreras de Accesibilidad:** Los adultos mayores, personas con discapacidad visual o con dificultades de lectura se encuentran en una situación de extrema vulnerabilidad al no poder acceder a la información de forma autónoma.
+*   **Riesgos de Salud:** Un error al comprender las dosis recomendadas, los horarios o las advertencias de contraindicación puede desencadenar efectos adversos graves o reducir la efectividad del tratamiento.
+
+### 💡 La Solución Propuesta
+**PharmaVox** propone un asistente inteligente y multimodal de **Voz y Pantalla Visual** que elimina las barreras físicas y cognitivas de la automedicación e interpretación de recetas.
+*   **¿Cómo soluciona este problema?** 
+    1.  **Voz Interactiva:** Traduce las instrucciones médicas complejas a lenguaje natural conversacional, optimizando las respuestas para ser habladas fluidamente por lectores de pantalla y sistemas de audio (TTS).
+    2.  **Layout Visual Enriquecido para Computadoras:** Al mismo tiempo que el usuario escucha las indicaciones, el backend le provee al cliente web una estructura visual interactiva (`visual_layout`) en formato JSON. Esta incluye tarjetas por bloques, cronogramas interactivos de dosificación, alertas con semáforos de riesgo y tipografías legibles de alto contraste ideales para pantallas de computadores y tablets.
+*   **👥 ¿Para quién funciona esta solución?**
+    *   **Adultos mayores** que requieren recordatorios claros y explicaciones pausadas.
+    *   **Personas con discapacidad visual** que dependen de interacciones por voz 100% accesibles.
+    *   **No nativos o personas con dificultades de lectura** que se benefician de explicaciones estructuradas en lenguaje simplificado.
+    *   **Público en general** que desea llevar un control riguroso de su calendario de dosificación sin confusión.
 
 ---
 
@@ -20,23 +41,26 @@ PharmaVox Backend es un servicio web RESTful de alto rendimiento desarrollado en
 *   **Framework Principal:** [FastAPI](https://fastapi.tiangolo.com/) (Asíncrono, basado en tipos estándar de Python y validación estricta con Pydantic v2).
 *   **Motor de Inteligencia Artificial:** [Google Generative AI SDK](https://github.com/google/generative-ai-python) (Modelos de la familia **Gemini 1.5/2.0 Flash/Pro**).
 *   **Servidor ASGI:** [Uvicorn](https://www.uvicorn.org/) (Servidor asíncrono ultrarrápido).
-*   **Entorno y Dependencias:** Python 3.10+ con gestión mediante entornos virtuales estándar.
+*   **Base de Datos / Persistencia:** SQLite de desarrollo con ORM SQLModel / SQLAlchemy.
 
 ---
 
-## 📂 Documentación Detallada
+## 📂 Documentación Detallada del Proyecto
 
-Para facilitar la comprensión del diseño de la aplicación y sus características, consulta los siguientes documentos técnicos en la carpeta `docs/`:
+Para facilitar la comprensión del diseño de la aplicación y sus características, consulta los siguientes documentos en la carpeta `docs/`, ahora estructurada en subcarpetas para evitar sobrecarga:
 
-*   📖 **[Arquitectura y Diseño del Sistema](docs/architecture.md):** Conoce el flujo de datos, el diseño de prompts para Gemini y el manejo de esquemas estructurados de IA.
-*   📡 **[Especificación de Endpoints (API Spec)](docs/endpoints.md):** Detalles exactos sobre cómo consumir la API, formatos de payload de entrada/salida y códigos de estado.
+*   📖 **[Arquitectura y Diseño del Sistema](docs/technical/architecture.md):** Conoce el flujo de datos, el diseño de prompts para Gemini y el manejo de esquemas estructurados de IA.
+*   📊 **[Modelo Entidad-Relación de la BD](docs/technical/database_erd.md):** Estructura relacional de las tablas e historial de escaneos y alarmas.
+*   📡 **[Especificación de Endpoints (API Spec)](docs/api/endpoints.md):** Detalles exactos sobre cómo consumir la API, formatos de payload de entrada/salida y códigos de estado.
+*   📋 **[Requerimientos del Sistema](docs/planning/requirements.md):** Detalle de los requerimientos funcionales (RF) y no funcionales (RNF) del backend y su trazabilidad.
+*   👥 **[Asignación de Tareas y Roles](docs/planning/team_tasks.md):** Distribución equitativa de las 10 tareas clave y sus dependencias del proyecto entre **Sergio** y **Alejandro**.
 
 ---
 
 ## 🔧 Configuración Rápida del Entorno
 
 ### 1. Requisitos Previos
-Asegúrate de tener instalado Python 3.10 o superior. Puedes verificarlo ejecutando:
+Asegúrate de tener instalado Python 3.11 o superior. Puedes verificarlo ejecutando:
 ```bash
 python --version
 ```
