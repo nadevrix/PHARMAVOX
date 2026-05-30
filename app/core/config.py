@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     # API Keys y servicios externos
     GEMINI_API_KEY: str = ""
     
+    # Base de Datos (Default SQLite local, se sobreescribe con Postgres en producción/docker)
+    DATABASE_URL: str = "sqlite:///./pharmavox.db"
+    
     # Servidor
     HOST: str = "0.0.0.0"
     PORT: int = 8000
