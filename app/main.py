@@ -1,15 +1,24 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-
+from app.db.session import engine
+from app.models import Base
 from app.api.api import api_router
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Inicializa las tablas en la base de datos (SQLite o Postgres) al arrancar el servidor
+    Base.metadata.create_all(bind=engine)
+    yield
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan
 )
 
 # Configuración de CORS para permitir solicitudes del Frontend

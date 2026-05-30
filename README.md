@@ -39,10 +39,12 @@ La lectura y correcta interpretación de los prospectos de los medicamentos y re
 
 ## 🛠️ Stack Tecnológico
 
-*   **Framework Principal:** [FastAPI](https://fastapi.tiangolo.com/) (Asíncrono, basado en tipos estándar de Python y validación estricta con Pydantic v2).
-*   **Motor de Inteligencia Artificial:** [Google Generative AI SDK](https://github.com/google/generative-ai-python) (Modelos de la familia **Gemini 1.5/2.0 Flash/Pro**).
+*   **Framework Principal:** [FastAPI](https://fastapi.tiangolo.com/) (Asíncrono, de alto rendimiento, basado en tipado estricto con Pydantic v2).
+*   **Motor de Inteligencia Artificial:** [Google Generative AI SDK](https://github.com/google/generative-ai-python) (Procesamiento multimodal con **Gemini 1.5/2.0 Flash/Pro**).
+*   **Base de Datos Relacional (SQL):** **PostgreSQL** para contenedores y producción. Utiliza SQLite local en desarrollo como una alternativa ágil y sin dependencias adicionales de sistema.
+*   **Mapeador Objeto-Relacional (ORM):** **SQLAlchemy 2.0** (implementación moderna con tipados robustos `Mapped` y `mapped_column` para máxima seguridad y autocompletado en el IDE).
+*   **Contenedores e Infraestructura:** **Docker** y **Docker Compose** para orquestar y aislar los servicios de base de datos Postgres y el servidor web FastAPI con configuraciones de red y persistencia automatizadas.
 *   **Servidor ASGI:** [Uvicorn](https://www.uvicorn.org/) (Servidor asíncrono ultrarrápido).
-*   **Base de Datos / Persistencia:** SQLite de desarrollo con ORM SQLModel / SQLAlchemy.
 
 ---
 
@@ -55,6 +57,21 @@ Para facilitar la comprensión del diseño de la aplicación y sus característi
 *   📡 **[Especificación de Endpoints (API Spec)](docs/api/endpoints.md):** Detalles exactos sobre cómo consumir la API, formatos de payload de entrada/salida y códigos de estado.
 *   📋 **[Requerimientos del Sistema](docs/planning/requirements.md):** Detalle de los requerimientos funcionales (RF) y no funcionales (RNF) del backend y su trazabilidad.
 *   👥 **[Asignación de Tareas y Roles](docs/planning/team_tasks.md):** Distribución equitativa de las 10 tareas clave y sus dependencias del proyecto entre **Sergio** y **Alejandro**.
+*   🛠️ **[Lineamientos de Desarrollo y Buenas Prácticas (Qué NO hacer)](docs/technical/development_guidelines.md):** Manual técnico esencial sobre estándares de desarrollo, manejo estricto de variables de entorno y antipatrones de programación que se deben evitar en PharmaVox.
+
+---
+
+## 🛑 Lineamientos de Desarrollo (Qué NO hacer en el Código)
+
+Para garantizar la mantenibilidad y un desarrollo ágil y profesional, todo el equipo debe seguir estrictamente estas directrices técnicas. Consulta el manual completo y detallado en **[Lineamientos de Desarrollo y Buenas Prácticas](docs/technical/development_guidelines.md)**.
+
+A modo de resumen rápido, **se debe evitar rotundamente**:
+
+1. **NO hardcodear ni duplicar variables de configuración en Python:** Las constantes, strings de conexión o credenciales de la API de Gemini nunca deben definirse con valores fijos dentro de clases o archivos en Python. Todo debe provenir de `.env` y ser mapeado de forma exclusiva en `app/core/config.py`.
+2. **NO forzar configuraciones rígidas de SQLite:** La base de datos oficial de producción de PharmaVox es **PostgreSQL**. El uso de SQLite está restringido únicamente a un fallback dinámico controlado de desarrollo local si el `.env` así lo define.
+3. **NO crear endpoints, modelos o rutas "huérfanas":** Todo archivo nuevo o modificado debe documentarse y explicarse en el archivo de [Asignación de Tareas (team_tasks.md)](docs/planning/team_tasks.md) detallando su carpeta, nombre y función exacta para mantener a todo el equipo al tanto de las modificaciones.
+4. **NO usar llamadas síncronas bloqueantes en el event loop:** Toda lógica de E/S pesada debe ser asíncrona (`async/await`) o declarada adecuadamente para no degradar el desempeño y asegurar la concurrencia rápida del sistema.
+5. **NO ignorar el punto de entrada ORM:** Todos los nuevos modelos SQLAlchemy se deben registrar en `app/models/__init__.py` para asegurar su autogeneración en el arranque de la aplicación.
 
 ---
 

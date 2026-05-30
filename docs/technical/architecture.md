@@ -73,6 +73,11 @@ PharmaVox aprovecha el poder de la API de **Google Gemini** para realizar tareas
 3.  **Procesamiento Nativo de PDFs:**
     *   Para interpretar prospectos extensos o recetas médicas provistas como archivos PDF, aprovechamos el soporte **multimodal nativo** de Gemini para documentos.
     *   FastAPI recibe el archivo PDF como flujo de bytes, y el conector de Gemini en el backend envía el archivo directamente indicando el mime-type `application/pdf`, permitiendo que la IA analice cientos de páginas de manuales médicos en milisegundos sin requerir OCR de terceros.
+4.  **Transmisión Binaria Segura de Archivos:**
+    *   Para permitir al frontend visualizar el contenido del PDF cuando el usuario hace clic, el backend expone un flujo de descarga mediante `FileResponse` de FastAPI. Esto permite transmitir de forma eficiente el flujo de bytes (`application/pdf`) directamente desde el volumen de almacenamiento de Postgres/Docker, haciendo que el navegador del cliente web lo renderice nativamente en un visor embebido de alta resolución sin degradar la memoria del servidor.
+5.  **Extracción de Fuentes y Citación Estructurada:**
+    *   Para garantizar la veracidad y transparencia de las respuestas generadas por la IA sobre prospectos en PDF, el backend inyecta instrucciones de citación en el *System Prompt* de Gemini.
+    *   El esquema JSON estricto de respuesta obliga a la IA a retornar una propiedad `sources` (Fuentes). Esta contiene un arreglo de citas mapeando el documento de origen (`pdf_id`, `document_name`), la página exacta (`page_number`), el título de la sección (`section_title`) y el texto exacto referenciado (`matched_text`), proporcionando trazabilidad completa al farmacéutico o administrador.
 
 ---
 
@@ -98,11 +103,51 @@ El backend de PharmaVox está especialmente diseñado para dar soporte a una **e
 
 ---
 
+## 🔒 Control de Acceso y Gestión de Roles (Administrador vs Farmacéutico)
+
+El backend de PharmaVox proporciona autenticación y validación de roles a nivel de API para dar servicio a dos aplicaciones frontend completamente independientes y con responsabilidades diferenciadas:
+
+```mermaid
+graph TD
+    %% Roles de usuario
+    Admin[Usuario: Administrador] -->|Accede a| AppAdmin[Aplicación de Administración]
+    Pharm[Usuario: Farmacéutico] -->|Accede a| AppPharm[Aplicación de Farmacia]
+    
+    %% Flujos de Backend y Permisos
+    subgraph FastAPI Security & Dependencies
+        AppAdmin -->|CRUD Usuarios| EndpointUsers[GET/POST/DELETE /admin/users]
+        AppAdmin -->|CRUD PDFs| EndpointPDFsCRUD[POST/DELETE /admin/pdfs]
+        AppAdmin -->|Modo Voz sobre PDFs| EndpointAskPDF[POST /assistant/ask-pdf]
+        
+        AppPharm -->|Modo Voz sobre PDFs| EndpointAskPDF
+        AppPharm -->|Ver/Listar PDFs| EndpointPDFsRead[GET /pdfs]
+        
+        %% Restricciones
+        AppPharm -.->|Acceso Denegado 403| EndpointUsers
+        AppPharm -.->|Acceso Denegado 403| EndpointPDFsCRUD
+    end
+    
+    style Admin fill:#fee2e2,stroke:#ef4444,stroke-width:2px
+    style Pharm fill:#e0f2fe,stroke:#0284c7,stroke-width:2px
+    style EndpointUsers fill:#fee2e2,stroke:#ef4444
+    style EndpointPDFsCRUD fill:#fee2e2,stroke:#ef4444
+```
+
+### Lógica Arquitectónica de Roles
+1.  **Diferenciación de Perfiles en el Modelo ORM:**
+    El campo `role` de la tabla `User` soporta un enumerado estricto que incluye `admin` (Administrador) y `pharmacist` (Farmacéutico), garantizando que desde la base de datos se controle la identidad del usuario.
+2.  **Inyección de Seguridad en FastAPI (`Security Dependencies`):**
+    Cada endpoint administrativo y operativo utiliza el sistema de dependencias `Depends()` de FastAPI para capturar el token de autenticación del usuario actual, validar su firma, verificar que su estado esté activo, y filtrar por privilegios:
+    *   **Dependencia `get_current_active_admin`:** Requiere rol `admin`. Si un farmacéutico intenta invocar estas rutas, FastAPI retorna un código `403 Forbidden` de inmediato.
+    *   **Dependencia `get_current_active_pharmacist_or_admin`:** Permite el paso a usuarios con rol `pharmacist` o `admin`. Ideal para la lectura de prospectos oficiales y las consultas de voz multimodal.
+
+---
+
 ## 📂 Organización y Diseño Modular
 
 La estructura del código sigue el patrón de **Arquitectura Limpia**, separando las responsabilidades claramente:
 
 *   `app/core/`: Centraliza las configuraciones globales, secretos y variables de entorno utilizando Pydantic Settings.
-*   `app/api/`: Capa de transporte y enrutamiento. Valida las peticiones HTTP entrantes mediante esquemas de Pydantic.
+*   `app/api/`: Capa de transporte y enrutamiento. Valida las peticiones HTTP entrantes mediante esquemas de Pydantic y aplica el control de acceso basado en roles (RBAC).
 *   `app/schemas/`: Define las estructuras de datos (tanto de entrada como de salida), garantizando que el contrato de la API sea inmutable.
 *   `app/services/`: Capa encargada de la comunicación con servicios de terceros. Aquí reside el cliente de Gemini y las llamadas de IA.

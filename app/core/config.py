@@ -1,20 +1,30 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from dotenv import load_dotenv
+import os
+
+# Cargar explícitamente el archivo .env al entorno de ejecución de Python
+load_dotenv()
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "PharmaVox Backend"
-    VERSION: str = "1.0.0"
-    API_V1_STR: str = "/api/v1"
+    PROJECT_NAME: str
+    VERSION: str
+    API_V1_STR: str
     
     # API Keys y servicios externos
-    GEMINI_API_KEY: str = ""
+    GEMINI_API_KEY: str
     
-    # Base de Datos (Default SQLite local, se sobreescribe con Postgres en producción/docker)
-    DATABASE_URL: str = "sqlite:///./pharmavox.db"
+    # Base de Datos PostgreSQL / SQLite
+    DATABASE_URL: str
+    
+    # Credenciales específicas de PostgreSQL (para Docker / Producción)
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
     
     # Servidor
-    HOST: str = "0.0.0.0"
-    PORT: int = 8000
-    DEBUG: bool = True
+    HOST: str
+    PORT: int
+    DEBUG: bool
 
     model_config = SettingsConfigDict(
         env_file=".env",

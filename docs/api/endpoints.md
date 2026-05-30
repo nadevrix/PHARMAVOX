@@ -162,3 +162,157 @@ Crea un calendario de tomas estructurado a partir del prospecto o la indicación
       }
     }
     ```
+
+---
+
+## 🔒 Módulo 5: Panel de Administración y Farmacia (Proyectados - Tarea S-2)
+
+Estos endpoints proveen los servicios dedicados para la Aplicación de Administración y la Aplicación de Farmacia. Cada endpoint cuenta con validación de roles en cabecera a través del token JWT del usuario (`Authorization: Bearer <token>`).
+
+### 👤 5.1 Gestión CRUD de Usuarios
+*   **Autorización:** Únicamente **Administrador (`admin`)**. Los farmacéuticos reciben `403 Forbidden`.
+
+#### `GET /api/v1/admin/users`
+Lista todos los usuarios del sistema.
+*   **Response (200 OK):**
+    ```json
+    [
+      {
+        "id": 1,
+        "email": "alejandro@pharmavox.com",
+        "full_name": "Alejandro Pérez",
+        "role": "pharmacist",
+        "is_active": true
+      },
+      {
+        "id": 2,
+        "email": "sergio@pharmavox.com",
+        "full_name": "Sergio Gómez",
+        "role": "admin",
+        "is_active": true
+      }
+    ]
+    ```
+
+#### `POST /api/v1/admin/users`
+Crea una nueva cuenta de usuario en el sistema.
+*   **Request JSON Payload:**
+    ```json
+    {
+      "email": "nuevo.farmaceutico@pharmavox.com",
+      "full_name": "Laura Díaz",
+      "role": "pharmacist",
+      "password": "secure_password_123"
+    }
+    ```
+*   **Response (201 Created):**
+    ```json
+    {
+      "success": true,
+      "user_id": 3,
+      "message": "Usuario con rol 'pharmacist' creado exitosamente."
+    }
+    ```
+
+#### `DELETE /api/v1/admin/users/{user_id}`
+Suspende o elimina una cuenta de usuario del sistema.
+*   **Response (200 OK):**
+    ```json
+    {
+      "success": true,
+      "message": "Cuenta de usuario desactivada exitosamente."
+    }
+    ```
+
+---
+
+### 📄 5.2 CRUD y Visualización de PDFs de Prospectos
+*   **Autorización:** Carga y Borrado: **Administrador (`admin`)**. Visualización y Listado: **Administrador (`admin`)** y **Farmacéutico (`pharmacist`)**.
+
+#### `POST /api/v1/admin/pdfs` (Solo Admin)
+Permite al administrador cargar un archivo PDF de un prospecto oficial en el servidor.
+*   **Request (Multipart Form-Data):**
+    *   `file`: Archivo PDF oficial (`application/pdf`).
+    *   `medication_name`: "Paracetamol 500mg".
+*   **Response (201 Created):**
+    ```json
+    {
+      "success": true,
+      "pdf_id": 12,
+      "file_path": "/uploads/leaflets/paracetamol_500.pdf",
+      "message": "PDF cargado y procesado exitosamente por la IA."
+    }
+    ```
+
+#### `DELETE /api/v1/admin/pdfs/{pdf_id}` (Solo Admin)
+Elimina un archivo PDF de prospecto del sistema.
+*   **Response (200 OK):**
+    ```json
+    {
+      "success": true,
+      "message": "Archivo PDF y su caché de IA eliminados correctamente."
+    }
+    ```
+
+#### `GET /api/v1/pdfs` (Admin y Pharmacist)
+Lista todos los archivos PDF oficiales disponibles en el catálogo médico.
+*   **Response (200 OK):**
+    ```json
+    [
+      {
+        "id": 12,
+        "medication_name": "Paracetamol 500mg",
+        "file_name": "paracetamol_500.pdf",
+        "upload_date": "2026-05-30T10:00:00Z"
+      }
+    ]
+    ```
+
+#### `GET /api/v1/pdfs/{pdf_id}/download` (Admin y Pharmacist)
+Transmite el archivo binario PDF del prospecto oficial para que el frontend lo pueda descargar o renderizar en un visor interactivo integrado en la interfaz cuando el usuario haga clic en él.
+*   **Response (200 OK):**
+    *   **Content-Type:** `application/pdf`
+    *   **Cuerpo de la Respuesta:** Flujo de bytes binario directo del archivo PDF original.
+
+---
+
+### 🎙️ 5.3 Modo Voz sobre Recursos PDF
+*   **Autorización:** **Administrador (`admin`)** y **Farmacéutico (`pharmacist`)**. Ambos usuarios pueden entrar en el modo voz en sus respectivas aplicaciones para consultar cualquier prospecto.
+
+#### `POST /api/v1/assistant/ask-pdf`
+Permite interrogar a la IA en lenguaje conversacional o mediante voz sobre cualquier PDF médico cargado en el sistema, utilizando la ingesta nativa de documentos de Gemini.
+*   **Request JSON Payload:**
+    ```json
+    {
+      "pdf_id": 12,
+      "question": "¿Cuáles son las contraindicaciones del paracetamol para personas con problemas hepáticos?",
+      "conversation_history": []
+    }
+    ```
+*   **Response (200 OK):**
+    ```json
+    {
+      "text_response": "El Paracetamol está contraindicado o requiere supervisión estricta en pacientes con insuficiencia hepática grave o alcoholismo activo, debido al riesgo incrementado de toxicidad hepática por sobredosis.",
+      "voice_response": "Si tienes problemas de hígado o consumo frecuente de alcohol, debes tener mucho cuidado. El paracetamol puede sobrecargar tu hígado. Consulta siempre con tu médico la dosis máxima.",
+      "visual_layout": {
+        "display_mode": "card",
+        "card_type": "danger",
+        "title": "Alerta de Toxicidad Hepática",
+        "content_bullets": [
+          "Evitar en caso de insuficiencia hepática grave.",
+          "Riesgo de daño en combinación con alcohol."
+        ],
+        "highlight_color": "#DC2626"
+      },
+      "sources": [
+        {
+          "pdf_id": 12,
+          "document_name": "paracetamol_500.pdf",
+          "page_number": 4,
+          "section_title": "4.3 Contraindicaciones y advertencias especiales",
+          "matched_text": "La administración de paracetamol en pacientes con insuficiencia hepática grave o en combinación con alcoholismo crónico incrementa significativamente el riesgo de daño hepatotóxico severo."
+        }
+      ]
+    }
+    ```
+

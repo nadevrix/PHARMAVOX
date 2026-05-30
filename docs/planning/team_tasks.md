@@ -9,6 +9,15 @@ Para asegurar el éxito del proyecto PharmaVox, el desarrollo del backend se div
 *   **Sergio (Database & Infrastructure Lead):** Encargado de estructurar la persistencia de datos (historial de escaneos, agendas y tomas), optimizar la velocidad y latencia mediante caché, garantizar la asincronía asfáltica y configurar la seguridad e infraestructura del servidor de FastAPI.
 *   **Alejandro (AI & Speech Integration Lead):** Encargado de orquestar la comunicación con la API de Google Gemini (modelos multimodales para escaneo de recetas y cajas), estructurar prompts para la simplificación interactiva de textos médicos y diseñar el formateador de respuestas por voz y layouts para computador.
 
+> [!CAUTION]
+> ### 🛑 REGLAS CRÍTICAS DE DESARROLLO (LO QUE NO DEBES HACER)
+> Para evitar fallos técnicos y mantener la sincronía de equipo, es obligatorio cumplir los **[Lineamientos de Desarrollo y Buenas Prácticas](../technical/development_guidelines.md)**:
+> 1. **NO hardcodear ni duplicar variables** en los archivos de configuración (`config.py`). Toda configuración se lee estrictamente del `.env`.
+> 2. **NO usar SQLite de forma estática**. La base de datos oficial es PostgreSQL; SQLite es un fallback dinámico.
+> 3. **NO crear archivos, rutas o endpoints "huérfanos"** sin detallar a qué tarea pertenecen y qué hacen en este archivo (`team_tasks.md`).
+> 4. **NO bloquear el event loop** de FastAPI con llamadas síncronas lentas. Mantén asincronía estricta (`async/await`).
+> 5. **NO olvidar registrar los nuevos modelos** SQLAlchemy en `app/models/__init__.py`.
+
 ---
 
 ## 🕸️ Diagrama de Dependencia de Tareas
@@ -68,19 +77,42 @@ graph TD
 
 ### 🐍 Tareas de Sergio (Bases de Datos & Backend)
 
-#### - [ ] Tarea S-1: Diseño de Base de Datos PostgreSQL, Roles de Usuario y PDFs
+#### - [x] Tarea S-1: Diseño de Base de Datos PostgreSQL, Roles de Usuario y PDFs
 *   **Descripción:** Diseñar e implementar el modelo relacional sobre **PostgreSQL** usando SQLAlchemy/SQLModel y crear la infraestructura de contenedores (**Dockerfile** y **docker-compose.yml**). Diseñar las tablas para almacenar medicamentos, recetas analizadas, historial de escaneos, recordatorios de dosificación, y las nuevas entidades: **`USER`** (con roles como *Admin*, *Patient*, *Caregiver*) y **`LEAFLET_PDF`** para almacenamiento físico y metadatos de documentos cargados por el administrador (Ver [Modelo ERD](../technical/database_erd.md)).
 *   **Dependencia:** **Ninguna**. Es el cimiento para todas las tareas de datos.
 *   **Requerimientos que completa:** **RF-5** (Caché), **RF-8** (Gestión de PDFs).
+*   **📝 Comentarios del Desarrollo (Sergio para Alejandro):**
+    >He completado el modelado de base de datos relacional y su integración automática. A continuación detallo los archivos creados y modificados en cada carpeta y qué es lo que hacen exactamente:
+    >
+    > #### 📁 Carpeta `app/db/` (Conectividad)
+    > *   `[NUEVO] app/db/session.py`: Inicializa la conexión mediante el motor `create_engine` de SQLAlchemy. Provee soporte prioritario para **PostgreSQL** (Docker) y un fallback a SQLite local si no está corriendo el contenedor Postgres en desarrollo. Además, provee el ayudante `get_db()` para inyecciones asíncronas seguras en controladores.
+    >
+    > #### 📁 Carpeta `app/models/` (Modelos del ORM SQLAlchemy 2.0)
+    > *   `[NUEVO] app/models/user.py`: Define el modelo `User` con campos para correo único, nombre completo, zona horaria y roles de usuario (`admin`, `patient`, `caregiver`).
+    > *   `[NUEVO] app/models/medication.py`: Define el modelo `Medication` para almacenar nombres de medicamentos, concentraciones, ingredientes y el resumen simplificado de Gemini.
+    > *   `[NUEVO] app/models/scan_history.py`: Define `ScanHistory` para persistir el historial de capturas de imágenes y PDFs subidos por los usuarios.
+    > *   `[NUEVO] app/models/dose_reminder.py`: Define `DoseReminder` para almacenar la lógica de recordatorios, tomas diarias y la descripción hablada fonética.
+    > *   `[NUEVO] app/models/leaflet_pdf.py`: Define `LeafletPDF` para la gestión administrativa de prospectos oficiales en formato PDF.
+    > *   `[NUEVO] app/models/__init__.py`: Punto de registro unificado. Importa todos los modelos en un único lugar para garantizar que SQLAlchemy los registre globalmente en los metadatos de `Base`.
+    >
+    > #### 📁 Carpeta Raíz `/`
+    > *   `[MODIFICADO] requirements.txt`: Agregada la librería `sqlalchemy>=2.0.0` a la lista de dependencias oficiales.
+    > *   `[MODIFICADO] app/main.py`: Modificado para integrar el administrador de contexto asíncrono `lifespan`. Al encender el servidor FastAPI, el sistema ejecuta automáticamente `Base.metadata.create_all(bind=engine)`, autogenerando todas las tablas relacionales e índices de base de datos de manera 100% transparente en Postgres o SQLite.
+    >
+    > *¡La capa de persistencia relacional PostgreSQL está 100% lista, instalada y verificada en el entorno virtual!*
 
 #### - [ ] Tarea S-2: API de Persistencia, Programador de Tomas y CRUD de Administración
 *   **Descripción:** 
     1. Programar los endpoints y modelos controladores necesarios para crear, guardar, modificar y listar las agendas de dosificación y alarmas generadas a partir de las recetas del usuario.
-    2. Desarrollar la API de Administración protegida para realizar operaciones **CRUD** de usuarios (crear, listar, suspender cuentas) y cargar, listar y eliminar archivos **PDF** de prospectos oficiales en el servidor PostgreSQL.
+    2. Desarrollar la API de Administración y Farmacia protegida con JWT. Implementar control de accesos basado en roles (RBAC) para diferenciar al **Administrador (`admin`)** y al **Farmacéutico (`pharmacist`)**:
+        *   **Administrador (`admin`):** Acceso a su propia aplicación respectiva. Tiene privilegios de CRUD total para gestionar usuarios (crear, listar, suspender cuentas) y PDFs (cargar, listar y eliminar archivos PDF oficiales de prospectos en Postgres). También puede activar el modo voz para interrogar a la IA sobre cualquier PDF cargado.
+        *   **Farmacéutico (`pharmacist`):** Acceso a su propia aplicación respectiva. Solo tiene privilegios de **Lectura únicamente** sobre PDFs (puede listarlos y verlos). Tiene prohibido modificar/crear/eliminar usuarios y PDFs (FastAPI debe denegar el acceso con `403 Forbidden`). Puede activar el modo voz en su panel para preguntar a la IA sobre cualquiera de los PDFs disponibles.
+    3. Programar el endpoint `GET /api/v1/pdfs/{pdf_id}/download` que lee el archivo PDF correspondiente desde el almacenamiento del servidor y transmite su contenido binario directamente utilizando `FileResponse` de FastAPI, permitiendo al frontend renderizarlo en su visor embebido al hacer clic en el PDF.
+    4. Integrar dinámicamente `docker-compose.yml` para que no contenga credenciales hardcodeadas, resolviendo dinámicamente puertos, volúmenes, llaves y base de datos PostgreSQL desde el `.env`.
 *   **Dependencia:** 
     *   *Interna:* **S-1** (Requiere el esquema de base de datos y ORM creados).
     *   *Externa:* **A-4** (Requiere que Alejandro defina el formato JSON del layout y tomas antes de poder mapearlo y guardarlo en la base de datos).
-*   **Requerimientos que completa:** **RF-6** (Persistencia de tomas), **RF-7** (CRUD Usuarios Admin), **RF-8** (Carga de PDFs).
+*   **Requerimientos que completa:** **RF-6** (Persistencia de tomas), **RF-7** (CRUD Usuarios Admin), **RF-8** (Carga de PDFs), **RF-10** (Transmisión de PDFs).
 
 #### - [ ] Tarea S-3: Caché de Respuestas de IA
 *   **Descripción:** Implementar una capa intermedia en el backend que intercepte las búsquedas de medicamentos comunes. Si la información ya fue procesada previamente por Gemini y guardada en base de datos, se responde al instante, optimizando costos e incrementando la velocidad drásticamente.
@@ -132,15 +164,17 @@ graph TD
 ### 🧠 Tareas de Alejandro (IA & Respuestas)
 
 #### - [ ] Tarea A-1: Servicio de Escaneo Multimodal con Gemini (Cajas, Recetas e Ingesta de PDFs)
-*   **Descripción:** Implementar el servicio encargado de comunicarse con el SDK de Google Gemini para procesar imágenes (cajas de medicamentos y recetas) y **documentos PDF** de prospectos. Aprovechar el soporte multimodal nativo de Gemini para leer directamente flujos de bytes de archivos PDF (`application/pdf`) sin requerir OCR de terceros y extraer información médica estructurada rígida.
+*   **Descripción:** Implementar el servicio encargado de comunicarse con el SDK de Google Gemini para procesar imágenes (cajas de medicamentos y recetas) y **documentos PDF** de prospectos. Aprovechar el soporte multimodal nativo de Gemini para leer directamente flujos de bytes de archivos PDF (`application/pdf`) sin requerir OCR de terceros y extraer información médica estructurada rígida, capturando de forma precisa el mapeo de metadatos de las páginas físicas leídas para la trazabilidad de citas.
 *   **Dependencia:**
     *   *Externa:* **S-4** (Requiere la base de la app de FastAPI asíncrona y la inyección de variables de entorno `GEMINI_API_KEY` para iniciar llamadas a la API externa).
-*   **Requerimientos que completa:** **RF-1** (Escaneo y OCR con IA), **RF-8** (Gestión e ingesta de PDFs).
+*   **Requerimientos que completa:** **RF-1** (Escaneo y OCR con IA), **RF-8** (Gestión e ingesta de PDFs), **RF-11** (Trazabilidad y Fuentes de la IA).
 
-#### - [ ] Tarea A-2: Prompt Engineering para Simplificación Médica
-*   **Descripción:** Desarrollar los prompts del sistema y los esquemas de salida estrictos (JSON Schema) para guiar a Gemini 1.5/2.0 en la traducción de términos médicos hiper-complejos a lenguaje sumamente amigable, estructurado por bloques visuales lógicos.
+#### - [ ] Tarea A-2: Prompt Engineering para Simplificación Médica e Interrogación de PDFs
+*   **Descripción:** Desarrollar los prompts del sistema y los esquemas de salida estrictos (JSON Schema) para:
+    1. Guiar a Gemini 1.5/2.0 en la traducción de términos médicos hiper-complejos a lenguaje sumamente amigable, estructurado por bloques visuales lógicos.
+    2. Diseñar e inyectar el esquema de citación para el endpoint `/api/v1/assistant/ask-pdf`, obligando a la IA a devolver un arreglo estructurado de fuentes (`sources`) indicando de forma explícita el nombre del PDF, número de página exacta, sección e hilos de texto de origen que fundamentan su respuesta.
 *   **Dependencia:** **A-1** (Requiere la conexión base con el SDK de Gemini implementada en A-1).
-*   **Requerimientos que completa:** **RF-2** (Simplificador de prospectos).
+*   **Requerimientos que completa:** **RF-2** (Simplificador de prospectos), **RF-11** (Trazabilidad y Fuentes de la IA).
 
 #### - [ ] Tarea A-3: Agente Conversacional de Voz y Audio (Vox Agent)
 *   **Descripción:** Desarrollar la lógica del endpoint `/api/v1/ask` para procesar consultas dinámicas sobre medicamentos activos, configurando la respuesta para retornar un texto plano adaptado para lectura en voz sin signos extraños. Adicionalmente, implementar el flujo para procesar audios binarios directos y transcribirlos/responderlos usando el soporte de audio nativo de Gemini (STT).
