@@ -18,6 +18,7 @@ La lectura y correcta interpretación de los prospectos de los medicamentos y re
 *   **¿Cómo soluciona este problema?** 
     1.  **Voz Interactiva:** Traduce las instrucciones médicas complejas a lenguaje natural conversacional, optimizando las respuestas para ser habladas fluidamente por lectores de pantalla y sistemas de audio (TTS).
     2.  **Layout Visual Enriquecido para Computadoras:** Al mismo tiempo que el usuario escucha las indicaciones, el backend le provee al cliente web una estructura visual interactiva (`visual_layout`) en formato JSON. Esta incluye tarjetas por bloques, cronogramas interactivos de dosificación, alertas con semáforos de riesgo y tipografías legibles de alto contraste ideales para pantallas de computadores y tablets.
+    3.  **Procesamiento Directo de PDFs:** Permite al administrador cargar archivos PDF completos de prospectos médicos oficiales para que la IA los lea e interprete de forma nativa en segundos, eliminando la necesidad de transcripciones manuales o software OCR lento de terceros.
 *   **👥 ¿Para quién funciona esta solución?**
     *   **Adultos mayores** que requieren recordatorios claros y explicaciones pausadas.
     *   **Personas con discapacidad visual** que dependen de interacciones por voz 100% accesibles.
@@ -28,11 +29,11 @@ La lectura y correcta interpretación de los prospectos de los medicamentos y re
 
 ## 🚀 Características Clave
 
-*   **🔍 Multimodal OCR & AI (Scan Engine):** Procesamiento de imágenes de cajas y recetas médicas usando Gemini Multimodal para extraer ingredientes activos, marca, dosis recomendada y precauciones.
-*   **🗣️ Vox Conversational Agent:** Orquestación de preguntas y respuestas médicas adaptadas en un lenguaje comprensible y amigable, listo para sintetizarse como voz.
+*   **🔍 Multimodal PDF & Image Scan Engine:** Procesamiento y lectura inteligente de imágenes de cajas, recetas, y **documentos PDF completos de prospectos médicos**, utilizando la capacidad multimodal nativa de Google Gemini para interpretar textos complejos de múltiples páginas directamente.
+*   **🗣️ Vox Conversational Agent & STT:** Orquestación de preguntas y respuestas médicas adaptadas en un lenguaje comprensible y amigable, con soporte para consultas textuales y de audio/voz directa (Speech-to-Text).
 *   **💻 Interfaz Dual (Voz + Pantalla Visual):** Además de la comunicación accesible por voz, el backend genera estructuras JSON de datos visuales enriquecidas, permitiendo al frontend renderizar tarjetas dinámicas, cronogramas de tomas y resúmenes de alta visibilidad optimizados para pantallas de computadores y tablets.
 *   **📋 Simplificador de Prospectos:** Traducción automática de jerga técnica/clínica a explicaciones por bloques con formato limpio e interactivo.
-*   **🕒 Generador Inteligente de Horarios:** Creación dinámica de un calendario y planificador de tomas a partir de las instrucciones de la receta o prospecto analizado.
+*   **🕒 Generador Inteligente de Horarios:** Creación dinámica de un calendario y planificador de tomas a partir de las instrucciones de la receta, imagen o PDF analizado.
 
 ---
 

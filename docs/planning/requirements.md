@@ -14,6 +14,10 @@ Este documento define las especificaciones funcionales y no funcionales del back
 | **RF-4** | **Estructura de Datos Visuales Híbridos** | El backend debe inyectar metadatos visuales (`visual_layout`) con íconos, alertas semánticas y viñetas en formato JSON para que el frontend los despliegue en pantallas de computadoras. | Alejandro | **Tarea A-4** |
 | **RF-5** | **Base de Datos de Medicamentos y Caché** | El sistema debe guardar un registro estructurado de los medicamentos ya escaneados para agilizar consultas repetidas y evitar sobrecostos por APIs externas. | Sergio | **Tarea S-1**, **Tarea S-3** |
 | **RF-6** | **Programador Dinámico de Tomas** | El sistema debe generar calendarios de dosificación dinámicos a partir de recetas e instrucciones, guardándolos persistentemente para alarmas futuras. | Sergio | **Tarea S-2** |
+| **RF-7** | **Panel CRUD de Usuarios (Administración)** | El sistema debe permitir a los usuarios con rol de administrador crear, leer, actualizar y eliminar (CRUD) cuentas de usuarios del sistema de forma segura. | Sergio | **Tarea S-2** |
+| **RF-8** | **CRUD y Carga de PDFs (Administración)** | El sistema debe permitir a administradores cargar y gestionar archivos PDF de prospectos médicos oficiales, integrándose con el analizador de Gemini. | Sergio / Alejandro | **Tarea S-1**, **Tarea A-1** |
+| **RF-9** | **Reconocimiento de Voz Conversacional (STT)** | El sistema debe permitir al usuario interactuar mediante voz, procesando audio transcripto en el cliente o subiendo audios para que Gemini los analice. | Alejandro | **Tarea A-3** |
+
 
 ---
 

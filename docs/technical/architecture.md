@@ -70,6 +70,23 @@ PharmaVox aprovecha el poder de la API de **Google Gemini** para realizar tareas
     *   Para garantizar que la API del backend retorne respuestas predecibles y seguras, utilizamos el soporte de **Esquemas JSON** de Gemini.
     *   Definimos un esquema estricto (utilizando tipos de datos Pydantic) y forzamos a Gemini a responder bajo esa exacta estructura, evitando alucinaciones o formatos inválidos.
 
+3.  **Procesamiento Nativo de PDFs:**
+    *   Para interpretar prospectos extensos o recetas médicas provistas como archivos PDF, aprovechamos el soporte **multimodal nativo** de Gemini para documentos.
+    *   FastAPI recibe el archivo PDF como flujo de bytes, y el conector de Gemini en el backend envía el archivo directamente indicando el mime-type `application/pdf`, permitiendo que la IA analice cientos de páginas de manuales médicos en milisegundos sin requerir OCR de terceros.
+
+---
+
+## 🎙️ Lógica de Reconocimiento de Voz (STT - Speech to Text)
+
+Para que el usuario interactúe con el asistente de voz de forma fluida y sin latencias molestas, establecemos dos flujos de trabajo claros:
+
+1.  **Reconocimiento en Cliente (Client-side STT - Recomendado):**
+    *   El frontend (navegador web o móvil) utiliza la API nativa de HTML5 **`webkitSpeechRecognition`** para transcribir la voz del usuario a texto en tiempo real, de manera local, gratuita y sin latencia.
+    *   Una vez que el usuario termina de hablar, el texto resultante es enviado como un simple string al endpoint asíncrono `/api/v1/ask` del backend.
+2.  **Reconocimiento en Servidor (Server-side STT - Fallback/Avanzado):**
+    *   Si el navegador no tiene soporte nativo, el cliente puede grabar audio (en formato WAV o WebM) y transmitirlo mediante un payload binario `/api/v1/stt`.
+    *   El backend puede reenviar este audio a la API de **Gemini** indicando el formato (ej. `audio/webm`), permitiendo que el LLM transcriba y procese la respuesta conversacional directamente de forma auditiva.
+
 ---
 
 ## 🎙️💻 Modelo de Presentación Híbrido (Voz + Interfaz Visual)
