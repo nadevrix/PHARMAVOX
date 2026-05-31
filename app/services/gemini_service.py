@@ -1,7 +1,7 @@
 """
-Servicio de IA — Gemini 1.5 Flash Chat (RAG Estricto)
+Servicio de IA — Gemini 2.5 Flash Chat (RAG Estricto)
 ======================================================
-Este módulo encapsula toda la lógica de conversación con Gemini 1.5 Flash.
+Este módulo encapsula toda la lógica de conversación con Gemini 2.5 Flash.
 La base de conocimiento está estrictamente limitada al bloque "Contexto:"
 cargado en tiempo real desde la Base de Datos.
 """
