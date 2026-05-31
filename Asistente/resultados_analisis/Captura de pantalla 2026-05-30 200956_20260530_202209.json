@@ -1,0 +1,19 @@
+{
+  "tipo_documento": "caja_medicamento",
+  "nombre_comercial": "Lorazepam cinfa",
+  "principio_activo": "Lorazepam",
+  "laboratorio": "cinfa",
+  "concentracion": "5 mg",
+  "forma_farmaceutica": "comprimidos",
+  "via_administracion": "oral",
+  "indicaciones": [],
+  "contraindicaciones": [],
+  "interacciones": [],
+  "efectos_adversos": [],
+  "dosis_recomendada": null,
+  "condiciones_almacenamiento": null,
+  "numero_lote": null,
+  "fecha_vencimiento": null,
+  "requiere_receta": true,
+  "resumen_audio": "Esta es una caja de Lorazepam cinfa, un medicamento con el principio activo Lorazepam en una concentración de 5 mg. Se presenta en forma de comprimidos para administración oral. Este medicamento requiere receta médica."
+}
