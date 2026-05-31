@@ -67,7 +67,7 @@ def ask_assistant(
             full_prompt = question
 
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-1.5-flash",
             contents=full_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,

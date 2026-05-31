@@ -329,29 +329,41 @@ export function VoiceAssistantPanel({
           ) : state === 'standby' ? (
             <div className="flex flex-col items-center animate-fade-in">
               <button
-                className="relative flex flex-col items-center justify-center w-36 h-36 rounded-full bg-slate-800/40 border-2 border-slate-700/50 shadow-2xl mb-6 cursor-default"
+                onClick={() => setState('listening')}
+                className="relative flex flex-col items-center justify-center w-36 h-36 rounded-full bg-slate-800/40 border-2 border-slate-700/50 shadow-2xl mb-6 cursor-pointer hover:bg-slate-800/60 transition-all hover:scale-105 active:scale-95"
+                title="Presione para hablar manualmente"
               >
-                <AudioLines className="w-12 h-12 text-slate-500 mb-2 animate-pulse" />
-                <span className="text-[9px] font-black text-slate-500 tracking-widest uppercase">
-                  ESPERANDO WAKE WORD
+                <AudioLines className="w-12 h-12 text-slate-400 mb-2 animate-pulse" />
+                <span className="text-[9px] font-black text-blue-400 tracking-widest uppercase animate-pulse">
+                  PRESIONE PARA HABLAR
                 </span>
               </button>
               <p className="text-white text-sm font-medium">
                 Diga <span className="text-blue-400 font-extrabold">"PharmaVox"</span> para activar el micrófono.
               </p>
-              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
-                o cualquier palabra similar
-              </p>
+              {!(window as any).SpeechRecognition && !(window as any).webkitSpeechRecognition ? (
+                <p className="text-amber-400 text-[10px] font-bold uppercase tracking-widest mt-2 max-w-xs leading-normal">
+                  ⚠️ Control de voz automático no disponible en este navegador. Presione el botón de arriba o escriba su consulta abajo.
+                </p>
+              ) : (
+                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
+                  o cualquier palabra similar
+                </p>
+              )}
             </div>
           ) : state === 'listening' ? (
             <div className="relative flex flex-col items-center animate-fade-in w-full">
               <div className="absolute inset-0 bg-blue-500 rounded-full blur-[70px] opacity-40 animate-pulse"></div>
-              <div className="relative flex flex-col items-center justify-center w-40 h-40 rounded-full bg-gradient-to-b from-[#004b7c] to-[#003152] border-4 border-blue-400 shadow-[0_0_50px_rgba(59,130,246,0.5)] mb-6">
+              <button
+                onClick={() => setState('standby')}
+                className="relative flex flex-col items-center justify-center w-40 h-40 rounded-full bg-gradient-to-b from-[#004b7c] to-[#003152] border-4 border-blue-400 shadow-[0_0_50px_rgba(59,130,246,0.5)] mb-6 cursor-pointer hover:scale-105 transition-transform"
+                title="Presione para detener"
+              >
                 <Mic className="w-14 h-14 text-white mb-2 animate-bounce" />
                 <span className="text-[10px] font-black text-blue-300 tracking-widest uppercase">
-                  ESCUCHANDO PREGUNTA
+                  DETENER ESCUCHA
                 </span>
-              </div>
+              </button>
               <p className="text-white font-bold text-sm">Hable ahora...</p>
               <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1">
                 FarmaVox se detendrá si detecta 10 segundos de silencio.
