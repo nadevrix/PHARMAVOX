@@ -261,8 +261,7 @@ def procesar_analisis(sesion: SesionCLI):
 
     try:
         # Usa pdf_service del codebase en lugar de duplicar la lógica
-        pdf_bytes = pdf.read_bytes()
-        resultado = pdf_service.analyze_pdf(pdf_bytes=pdf_bytes)
+        resultado = pdf_service.analyze_pdf(pdf_bytes=pdf_bytes, filename=pdf.name)
 
         # Guarda el JSON
         ts        = datetime.now().strftime("%Y%m%d_%H%M%S")

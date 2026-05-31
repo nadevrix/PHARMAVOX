@@ -58,8 +58,8 @@ async def upload_pdf(
         f.write(pdf_bytes)
 
     try:
-        # 2. Analizar el prospecto con Gemini 1.5 Flash multimodal
-        extracted_data = pdf_service.analyze_pdf(pdf_bytes)
+        # 2. Analizar el prospecto con Gemini 1.5/2.5 Flash multimodal, indicando el filename para redundancia
+        extracted_data = pdf_service.analyze_pdf(pdf_bytes, filename=file.filename)
         
         # 3. Guardar registro en leaflet_pdfs
         leaflet_rec = LeafletPDF(
