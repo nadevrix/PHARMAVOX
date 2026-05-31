@@ -340,4 +340,20 @@ export const api = {
   downloadPDF: async (pdfId: number, role: string = 'pharmacist'): Promise<void> => {
     window.open(`${API_URL}/pdfs/${pdfId}/download?x-role=${role}`, '_blank');
   },
+
+  login: async (email: string, password: string): Promise<UserResponse> => {
+    const response = await fetchWithRetry(`${API_URL}/users/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email, password })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || 'Credenciales de acceso incorrectas.');
+    }
+    return response.json();
+  },
 };

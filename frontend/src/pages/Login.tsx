@@ -1,28 +1,46 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Lock, Eye, Activity } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, Activity, AlertTriangle } from 'lucide-react';
 import { Card } from '../components/ui/Card';
+import { api } from '../services/api';
 
 export function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email.includes('admin') || email.includes('qa') || email.includes('chavez')) {
-      navigate('/admin/dashboard');
-    } else {
-      navigate('/farmaceutico');
+  const executeLogin = async (loginEmail: string, loginPass: string) => {
+    setLoading(true);
+    setError('');
+    try {
+      const user = await api.login(loginEmail, loginPass);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/farmaceutico');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Error en la autenticación. Verifique sus datos.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const loginAs = (roleEmail: string) => {
-    setEmail(roleEmail);
-    if (roleEmail.includes('chavez') || roleEmail.includes('admin') || roleEmail.includes('qa')) {
-      navigate('/admin/dashboard');
-    } else {
-      navigate('/farmaceutico');
-    }
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+    executeLogin(email, password);
+  };
+
+  const loginAs = (testEmail: string, testPass: string) => {
+    setEmail(testEmail);
+    setPassword(testPass);
+    executeLogin(testEmail, testPass);
   };
 
   return (
@@ -79,6 +97,13 @@ export function Login() {
               </p>
             </div>
 
+            {error && (
+              <div className="mb-5 p-4 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold rounded-xl uppercase tracking-wider flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 animate-pulse" />
+                <span>{error}</span>
+              </div>
+            )}
+
             <form className="space-y-5" onSubmit={handleLogin}>
               <div>
                 <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-1.5">
@@ -112,13 +137,22 @@ export function Login() {
                   <input
                     id="password"
                     name="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="block w-full pl-11 pr-11 py-2.5 sm:text-sm border-slate-200 rounded-xl bg-slate-50 text-slate-900 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition-colors placeholder:text-slate-400"
                     placeholder="••••••••"
                   />
-                  <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center cursor-pointer group">
-                    <Eye className="h-5 w-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
+                  <div 
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center cursor-pointer group"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
+                    ) : (
+                      <Eye className="h-5 w-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
+                    )}
                   </div>
                 </div>
               </div>
@@ -126,9 +160,10 @@ export function Login() {
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-[#004b7c] hover:bg-[#00385e] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 transition-all"
+                  disabled={loading}
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-[#004b7c] hover:bg-[#00385e] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 transition-all disabled:opacity-50"
                 >
-                  Ingresar al Sistema
+                  {loading ? 'Verificando...' : 'Ingresar al Sistema'}
                 </button>
               </div>
             </form>
@@ -147,7 +182,8 @@ export function Login() {
 
               <div className="mt-6 space-y-3">
                 <button
-                  onClick={() => loginAs('carlos.mendoza@farmacorp.com')}
+                  onClick={() => loginAs('carlos.mendoza@farmacorp.com', 'password123')}
+                  disabled={loading}
                   className="w-full flex justify-between items-center p-3 sm:px-4 border border-slate-200 rounded-xl shadow-sm bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-left group"
                 >
                   <div className="flex items-center gap-3">
@@ -161,7 +197,8 @@ export function Login() {
                 </button>
 
                 <button
-                  onClick={() => loginAs('ana.gomez@farmacorp.com')}
+                  onClick={() => loginAs('ana.gomez@farmacorp.com', 'password123')}
+                  disabled={loading}
                   className="w-full flex justify-between items-center p-3 sm:px-4 border border-slate-200 rounded-xl shadow-sm bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-left group"
                 >
                   <div className="flex items-center gap-3">
@@ -175,14 +212,15 @@ export function Login() {
                 </button>
                 
                 <button
-                  onClick={() => loginAs('sofia.chavez@farmacorp.com')}
+                  onClick={() => loginAs('sergio@pharmavox.com', 'miPasswordSeguro123')}
+                  disabled={loading}
                   className="w-full flex justify-between items-center p-3 sm:px-4 border border-slate-200 rounded-xl shadow-sm bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-left group"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-[#004b7c]"></div>
                     <div>
-                      <div className="text-sm font-bold text-slate-800 group-hover:text-[#004b7c] transition-colors">Dra. Sofía Chávez</div>
-                      <div className="text-[11px] text-slate-500 font-medium mt-0.5">sofia.chavez@farmacorp.com</div>
+                      <div className="text-sm font-bold text-slate-800 group-hover:text-[#004b7c] transition-colors">Sergio Gómez</div>
+                      <div className="text-[11px] text-slate-500 font-medium mt-0.5">sergio@pharmavox.com</div>
                     </div>
                   </div>
                   <span className="text-[10px] font-bold text-[#004b7c] bg-blue-50 border border-blue-100 px-2 py-1 rounded uppercase tracking-wider">QA / Admin</span>

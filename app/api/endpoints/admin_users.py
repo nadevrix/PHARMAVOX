@@ -1,13 +1,35 @@
 from fastapi import APIRouter, Depends, HTTPException, Header, status
 from sqlalchemy.orm import Session
 from typing import List
+from pydantic import BaseModel, EmailStr
 
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate, UserOut
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, verify_password
 
 router = APIRouter()
+
+class UserLoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+@router.post("/users/login", response_model=UserOut)
+async def login_user(
+    login_in: UserLoginRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Autentica un usuario en el sistema con email y contraseña.
+    """
+    db_user = db.query(User).filter(User.email == login_in.email).first()
+    if not db_user or not verify_password(login_in.password, db_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales de acceso incorrectas."
+        )
+    return db_user
+
 
 def require_admin(x_role: str = Header("pharmacist", description="Cabecera para control de acceso simulado. Requiere: admin")):
     if x_role != "admin":

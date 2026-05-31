@@ -38,6 +38,18 @@ export function AdminDashboard() {
     return () => clearInterval(interval);
   }, []);
 
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const fullName = user?.full_name || 'Sergio Gómez';
+  const roleLabel = user?.role === 'admin' ? 'Directora QA / Admin' : 'Operario Autorizado';
+  
+  const initials = fullName
+    .split(' ')
+    .map((n: string) => n[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       {/* Header */}
@@ -70,14 +82,18 @@ export function AdminDashboard() {
 
         <div className="flex items-center gap-4">
           <div className="text-right hidden sm:block">
-            <p className="text-sm font-bold text-slate-800">Dra. Sofía Chávez</p>
-            <p className="text-[10px] font-bold text-blue-600 tracking-wider uppercase">Directora QA / Admin</p>
+            <p className="text-sm font-bold text-slate-800">{fullName}</p>
+            <p className="text-[10px] font-bold text-blue-600 tracking-wider uppercase">{roleLabel}</p>
           </div>
           <div className="w-10 h-10 rounded-full bg-[#004b7c] text-white flex items-center justify-center font-bold shadow-md shadow-blue-900/20 border-2 border-white ring-2 ring-blue-100">
-            S
+            {initials}
           </div>
           <div className="w-px h-8 bg-slate-200 mx-2"></div>
-          <Link to="/login" className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
+          <Link 
+            to="/login" 
+            onClick={() => localStorage.removeItem('user')}
+            className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors"
+          >
             <LogOut className="w-5 h-5" />
           </Link>
         </div>
