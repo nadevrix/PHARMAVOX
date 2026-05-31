@@ -25,10 +25,11 @@ class VisualLayout(BaseModel):
 class AskRequest(BaseModel):
     """
     Request del endpoint POST /api/v1/ask.
-    El cliente únicamente envía la pregunta actual del usuario.
+    El cliente únicamente envía la pregunta actual del usuario y el historial.
     """
     question: str
     medication_context: str = ""    # Campo opcional para contexto manual adicional
+    conversation_history: Optional[List[str]] = None
 
 
 class AskResponse(BaseModel):

@@ -14,22 +14,19 @@ from app.core.config import settings
 # ── PROMPTS (RAG Estricto y Personalidad) ───────────────────────────────────────
 
 SYSTEM_PROMPT = """
-Eres FarmaVox, un asistente de voz farmaceutico inteligente e industrial.
-Apoyas a bioquimicos y farmaceuticos con datos clinicos y tecnicos directos.
+Eres FarmaVox, un asistente de voz de IA farmacéutico conversacional, inteligente y directo.
+Apoyas a bioquímicos, farmacéuticos y administradores con datos clínicos directos obtenidos de los prospectos PDF cargados.
 
-Norma fundamental (RAG estricto):
-- Tu UNICA fuente de verdad y conocimiento es la informacion del prospecto / medicamento proveida en el bloque "Contexto:".
-- Si la pregunta del usuario es sobre un medicamento o tema que NO esta presente en el Contexto proveido, responde directamente indicando que no hay registros para esa consulta.
-- Queda ABSOLUTAMENTE PROHIBIDO inventar informacion.
+Normas fundamentales:
+1. Tu base de conocimiento para preguntas médicas y técnicas son los prospectos PDF provistos en el "Contexto de Prospectos PDF Cargados:".
+2. Si el usuario te saluda, te dice gracias o te hace preguntas conversacionales básicas (como "hola", "cómo estás", "gracias"), responde de forma amable, corta y directa como un colega profesional (ej. "Hola, soy FarmaVox, tu asistente. ¿En qué te puedo ayudar hoy?").
+3. Si el usuario te hace una pregunta técnica sobre un fármaco o indicación que NO está en el Contexto provisto, dile directamente que no tienes ese prospecto cargado en el sistema todavía.
+4. Queda absolutamente prohibido inventar información médica o técnica.
 
-Personalidad:
-- Tono estrictamente industrial, directo y firme.
-- Respuestas de MAXIMO una o dos oraciones ultra cortas y precisas (maximo 30 palabras).
-- Evita saludos informales, modismos cercanos o introducciones superfluas.
-
-Normas de respuesta:
-- Solo texto plano, sin asteriscos, guiones, markdown ni simbolos.
-- Declara con firmeza si requiere receta medica obligatoria.
+Personalidad y Voz:
+- Respuestas muy cortas, concisas y naturales (máximo 30-40 palabras) pensadas para ser leídas por voz.
+- Tono profesional, limpio y firme.
+- No uses asteriscos, guiones, numerales ni formato markdown. Solo texto limpio.
 """
 
 
@@ -48,6 +45,7 @@ def _get_client() -> genai.Client:
 def ask_assistant(
     question: str,
     medication_context: str = "",
+    conversation_history: list = None
 ) -> str:
     """
     Realiza una consulta al asistente FarmaVox y retorna la respuesta de texto de Gemini.
@@ -56,22 +54,31 @@ def ask_assistant(
     try:
         client = _get_client()
 
+        # Darle formato al historial conversacional
+        history_str = ""
+        if conversation_history:
+            history_str = "\n".join(conversation_history) + "\n"
+
         # Prepara los contenidos de Gemini alimentando el contexto y la pregunta
         full_prompt = ""
         if medication_context:
             full_prompt = (
-                f"Contexto:\n{medication_context}\n\n"
-                f"Pregunta: {question}"
+                f"Contexto de Prospectos PDF Cargados:\n{medication_context}\n\n"
+                f"Historial de la Conversación:\n{history_str}"
+                f"Usuario: {question}"
             )
         else:
-            full_prompt = question
+            full_prompt = (
+                f"Historial de la Conversación:\n{history_str}"
+                f"Usuario: {question}"
+            )
 
         response = client.models.generate_content(
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash",
             contents=full_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,
-                max_output_tokens=100,  # Ultra corto e industrial para ahorrar tokens y costes
+                max_output_tokens=150,  # Corto y conversacional
             )
         )
         return response.text.strip()

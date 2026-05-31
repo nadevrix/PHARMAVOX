@@ -190,14 +190,14 @@ export const api = {
   },
 
   // ── Módulo 2: Vox Assistant ────────────────────────────
-  askAssistant: async (question: string, context: string): Promise<AskResponse> => {
+  askAssistant: async (question: string, context: string, conversationHistory?: string[]): Promise<AskResponse> => {
     const response = await fetchWithRetry(`${API_URL}/ask`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         medication_context: context,
         question: question,
-        conversation_history: []
+        conversation_history: conversationHistory || []
       })
     });
 

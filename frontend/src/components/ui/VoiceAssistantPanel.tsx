@@ -23,6 +23,7 @@ export function VoiceAssistantPanel({
   const [state, setState] = useState<'inactive' | 'standby' | 'listening' | 'processing' | 'responding' | 'error'>('inactive');
   const [question, setQuestion] = useState('');
   const [responseData, setResponseData] = useState<AskResponse | null>(null);
+  const [chatHistory, setChatHistory] = useState<string[]>([]);
   
   // SpeechRecognition References
   const wakeWordRecognitionRef = useRef<any>(null);
@@ -211,10 +212,16 @@ export function VoiceAssistantPanel({
     setState('processing');
     setResponseData(null);
 
+    const updatedHistory = [...chatHistory, `Usuario: ${queryText}`];
+    setChatHistory(updatedHistory);
+
     try {
-      const data = await api.askAssistant(queryText, context);
+      const data = await api.askAssistant(queryText, context, updatedHistory);
       setResponseData(data);
       setState('responding');
+
+      // Actualizar el historial con la respuesta de la IA
+      setChatHistory([...updatedHistory, `Asistente: ${data.text_response}`]);
 
       // Reproducir audio Base64 si está presente
       if (data.audio_base64) {
@@ -240,15 +247,35 @@ export function VoiceAssistantPanel({
     }
   };
 
-  const handleEnterIaMode = () => {
+  const handleEnterIaMode = async () => {
     setIsInIaMode(true);
-    setState('standby');
+    setState('processing');
+    setChatHistory([]);
+    playBeep();
+
+    try {
+      // Saludo inicial conversacional de bienvenida
+      const data = await api.askAssistant("hola", context, []);
+      setResponseData(data);
+      setState('responding');
+      setChatHistory([`Asistente: ${data.text_response}`]);
+
+      if (data.audio_base64) {
+        const audio = new Audio(`data:audio/mp3;base64,${data.audio_base64}`);
+        currentAudioRef.current = audio;
+        audio.play();
+      }
+    } catch (error) {
+      console.error(error);
+      setState('standby');
+    }
   };
 
   const handleExitIaMode = () => {
     setIsInIaMode(false);
     setState('inactive');
     setResponseData(null);
+    setChatHistory([]);
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
     }

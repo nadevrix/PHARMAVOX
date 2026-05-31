@@ -117,6 +117,7 @@ async def ask_assistant(
         answer = gemini_service.ask_assistant(
             question=request.question,
             medication_context=db_knowledge_context,
+            conversation_history=request.conversation_history
         )
 
         # 4. Generar audio TTS y codificar a Base64
