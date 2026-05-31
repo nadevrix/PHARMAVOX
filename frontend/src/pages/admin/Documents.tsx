@@ -12,8 +12,8 @@ export function Documents() {
   ]);
 
   const columns = [
-    { 
-      header: 'Nombre del Manual', 
+    {
+      header: 'Nombre del Manual',
       accessor: (row: any) => (
         <div className="flex items-center space-x-3">
           <div className="bg-blue-50 p-2 rounded-lg">
@@ -21,19 +21,18 @@ export function Documents() {
           </div>
           <span className="font-bold text-slate-800">{row.name}</span>
         </div>
-      ) 
+      )
     },
     { header: 'Lote', accessor: 'batch' as keyof any },
     { header: 'Fecha de Subida', accessor: 'date' as keyof any },
-    { 
-      header: 'Estado', 
+    {
+      header: 'Estado',
       accessor: (row: any) => (
-        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-          row.status === 'Activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-        }`}>
+        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${row.status === 'Activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+          }`}>
           {row.status.toUpperCase()}
         </span>
-      ) 
+      )
     },
     {
       header: 'Acciones',
