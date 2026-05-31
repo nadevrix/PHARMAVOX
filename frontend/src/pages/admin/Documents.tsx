@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Card } from '../../components/ui/Card';
 import { DataTable } from '../../components/ui/DataTable';
-import { UploadCloud, File, Trash2, Download, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { UploadCloud, File, Trash2, Download, AlertTriangle, CheckCircle2, Edit2 } from 'lucide-react';
 import { api, type PDFListItem } from '../../services/api';
 
 export function Documents() {
@@ -51,6 +51,21 @@ export function Documents() {
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleUpdatePDF = async (id: number, currentName: string) => {
+    const newName = prompt('Editar nombre del archivo prospecto:', currentName);
+    if (!newName || newName.trim() === '' || newName === currentName) return;
+
+    setError('');
+    setSuccess('');
+    try {
+      await api.updatePDFMetadata(id, newName.trim(), 'admin');
+      setSuccess('Metadatos del prospecto modificados correctamente.');
+      fetchDocs();
+    } catch (err: any) {
+      setError(err.message || 'Error al actualizar metadatos del prospecto.');
     }
   };
 
@@ -119,6 +134,13 @@ export function Documents() {
       header: 'Acciones',
       accessor: (row: PDFListItem) => (
         <div className="flex items-center space-x-1.5">
+          <button
+            onClick={() => handleUpdatePDF(row.id, row.filename)}
+            className="p-2 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+            title="Editar metadatos del prospecto"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
           <button
             onClick={() => handleDownloadPDF(row.id)}
             className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"

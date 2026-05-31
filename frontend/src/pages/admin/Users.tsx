@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import { DataTable } from '../../components/ui/DataTable';
-import { UserPlus, User, X, Trash2, Shield, UserCheck } from 'lucide-react';
+import { UserPlus, User, X, Trash2, Shield, UserCheck, Edit2 } from 'lucide-react';
 import { api, type UserResponse } from '../../services/api';
 
 export function Users() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
   const [users, setUsers] = useState<UserResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -33,32 +34,67 @@ export function Users() {
     fetchUsers();
   }, []);
 
-  const handleCreateUser = async (e: React.FormEvent) => {
+  const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName || !email || !password) return;
+    if (!fullName || !email) return;
 
     setSubmitting(true);
     setError('');
     try {
-      await api.createUser({
-        full_name: fullName,
-        email,
-        role,
-        password,
-        timezone: 'America/Mexico_City'
-      }, 'admin');
+      if (editingUser) {
+        // Actualizar usuario existente
+        await api.updateUser(editingUser.id, {
+          full_name: fullName,
+          email,
+          role,
+          password: password || undefined
+        }, 'admin');
+      } else {
+        // Crear nuevo usuario
+        if (!password) {
+          setError('La contraseña es obligatoria para nuevos usuarios.');
+          setSubmitting(false);
+          return;
+        }
+        await api.createUser({
+          full_name: fullName,
+          email,
+          role,
+          password,
+          timezone: 'America/Mexico_City'
+        }, 'admin');
+      }
 
       setFullName('');
       setEmail('');
       setPassword('');
       setRole('pharmacist');
+      setEditingUser(null);
       setIsModalOpen(false);
       fetchUsers();
     } catch (err: any) {
-      setError(err.message || 'Error al crear el usuario.');
+      setError(err.message || 'Error al guardar el usuario.');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEditClick = (user: UserResponse) => {
+    setEditingUser(user);
+    setFullName(user.full_name);
+    setEmail(user.email);
+    setRole(user.role);
+    setPassword('');
+    setIsModalOpen(true);
+  };
+
+  const handleNewClick = () => {
+    setEditingUser(null);
+    setFullName('');
+    setEmail('');
+    setRole('pharmacist');
+    setPassword('');
+    setIsModalOpen(true);
   };
 
   const handleDeleteUser = async (id: number) => {
@@ -113,13 +149,22 @@ export function Users() {
     {
       header: 'Acciones',
       accessor: (row: UserResponse) => (
-        <button
-          onClick={() => handleDeleteUser(row.id)}
-          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-          title="Eliminar usuario"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="flex items-center space-x-1.5">
+          <button
+            onClick={() => handleEditClick(row)}
+            className="p-2 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+            title="Editar usuario"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => handleDeleteUser(row.id)}
+            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+            title="Eliminar usuario"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       )
     }
   ];
@@ -132,7 +177,7 @@ export function Users() {
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Administra los accesos de operarios y administradores de QA.</p>
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleNewClick}
           className="flex items-center space-x-2 bg-[#004b7c] hover:bg-[#00385f] text-white px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md"
         >
           <UserPlus className="w-4 h-4" />
@@ -165,13 +210,15 @@ export function Users() {
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-md border border-slate-200 shadow-2xl rounded-3xl p-6 bg-white">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-sm font-black text-[#00385F] uppercase tracking-wider">Registrar Nuevo Usuario</h3>
+              <h3 className="text-sm font-black text-[#00385F] uppercase tracking-wider">
+                {editingUser ? 'Editar Usuario' : 'Registrar Nuevo Usuario'}
+              </h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-50">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateUser} className="space-y-4">
+            <form onSubmit={handleSaveUser} className="space-y-4">
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Nombre Completo</label>
                 <input
@@ -197,14 +244,16 @@ export function Users() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Contraseña de Acceso</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Contraseña de Acceso {editingUser && '(Dejar en blanco para mantener)'}
+                </label>
                 <input
                   type="password"
-                  required
+                  required={!editingUser}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full border-slate-200 rounded-xl py-2.5 px-3.5 border focus:ring-[#004b7c] focus:border-[#004b7c] text-sm text-slate-800 placeholder:text-slate-300 transition-all"
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder={editingUser ? 'Nueva contraseña (opcional)' : 'Mínimo 6 caracteres'}
                   minLength={6}
                 />
               </div>
@@ -234,7 +283,7 @@ export function Users() {
                   disabled={submitting}
                   className="px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white bg-[#004b7c] rounded-xl hover:bg-[#00385f] transition-all shadow-md disabled:opacity-50"
                 >
-                  {submitting ? 'Creando...' : 'Guardar Usuario'}
+                  {submitting ? 'Guardando...' : editingUser ? 'Actualizar' : 'Guardar Usuario'}
                 </button>
               </div>
             </form>

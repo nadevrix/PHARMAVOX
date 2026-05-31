@@ -258,6 +258,23 @@ export const api = {
     return response.json();
   },
 
+  updateUser: async (userId: number, data: Partial<CreateUserRequest>, role: string = 'admin'): Promise<UserResponse> => {
+    const response = await fetchWithRetry(`${API_URL}/admin/users/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Role': role
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || 'Error al actualizar el usuario');
+    }
+    return response.json();
+  },
+
   deleteUser: async (userId: number, role: string = 'admin'): Promise<void> => {
     const response = await fetchWithRetry(`${API_URL}/admin/users/${userId}`, {
       method: 'DELETE',
@@ -281,6 +298,23 @@ export const api = {
     if (!response.ok) {
       const err = await response.json();
       throw new Error(err.detail || 'Error al subir el PDF');
+    }
+    return response.json();
+  },
+
+  updatePDFMetadata: async (pdfId: number, filename: string, role: string = 'admin'): Promise<PDFListItem> => {
+    const response = await fetchWithRetry(`${API_URL}/admin/pdfs/${pdfId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Role': role
+      },
+      body: JSON.stringify({ filename })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || 'Error al actualizar los metadatos del PDF');
     }
     return response.json();
   },
