@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LogOut, Mic, BrainCircuit, Scan, LayoutList, Clock, BookOpen } from 'lucide-react';
+import { LogOut, Mic, Scan, LayoutList, Clock, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { VoiceAssistantPanel } from '../../components/ui/VoiceAssistantPanel';
 import { ScannerPanel } from '../../components/ui/ScannerPanel';

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send, Loader2, BrainCircuit, Mic, BookOpen, AlertTriangle, Pill } from 'lucide-react';
+import { Send, Loader2, BrainCircuit, Mic, AlertTriangle, Pill } from 'lucide-react';
 import { api, type AskResponse } from '../../services/api';
 
 export function PDFAssistantPanel() {

@@ -23,7 +23,7 @@ export function VoiceAssistantPanel({
   useEffect(() => {
     if (state !== 'standby') return;
     
-    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return; // Browser no soporta reconocimiento de voz nativo
 
     const recognition = new SpeechRecognition();

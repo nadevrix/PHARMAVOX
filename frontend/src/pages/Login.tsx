@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Lock, Eye, Activity, BrainCircuit } from 'lucide-react';
+import { User, Lock, Eye, Activity } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 
 export function Login() {

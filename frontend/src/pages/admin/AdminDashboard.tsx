@@ -6,8 +6,7 @@ import {
   BookOpen,
   LayoutList,
   Scan,
-  LogOut,
-  BrainCircuit,
+  LogOut
 } from 'lucide-react';
 import { VoiceAssistantPanel } from '../../components/ui/VoiceAssistantPanel';
 import { ScannerPanel } from '../../components/ui/ScannerPanel';
