@@ -1,50 +1,122 @@
 # PharmaVox Backend 🎙️💻💊
-> **El cerebro de Inteligencia Artificial multimodal y voz que hace comprensible y accesible la información médica para todos.**
+> **El cerebro de Inteligencia Artificial y voz neural diseñado para asistir a farmacéuticos y profesionales de la salud en la consulta y gestión rápida de información técnica de medicamentos.**
 
-PharmaVox es una plataforma interactiva que transforma los complejos prospectos médicos y recetas físicas en **experiencias auditivas y visuales fluidas**. Este repositorio contiene el **Backend en Python + FastAPI**, diseñado específicamente para actuar como el motor de procesamiento inteligente de PharmaVox.
+PharmaVox es una plataforma interactiva que transforma los complejos prospectos médicos oficiales en **experiencias auditivas y visuales fluidas**. Este repositorio contiene el **Backend en Python + FastAPI**, diseñado específicamente para actuar como el motor de procesamiento inteligente RAG (Retrieval-Augmented Generation) y TTS (Text-to-Speech) de PharmaVox.
 
 ---
 
 ## 📌 Contexto del Proyecto
 
 ### ⚠️ La Problemática
-La lectura y correcta interpretación de los prospectos de los medicamentos y recetas médicas presenta desafíos críticos en la sociedad actual:
-*   **Complejidad y Jerga Médica:** El lenguaje altamente clínico y la tipografía diminuta hacen que los prospectos sean casi indescifrables para el ciudadano común.
-*   **Barreras de Accesibilidad:** Los adultos mayores, personas con discapacidad visual o con dificultades de lectura se encuentran en una situación de extrema vulnerabilidad al no poder acceder a la información de forma autónoma.
-*   **Riesgos de Salud:** Un error al comprender las dosis recomendadas, los horarios o las advertencias de contraindicación puede desencadenar efectos adversos graves o reducir la efectividad del tratamiento.
+La consulta rápida y correcta interpretación de los prospectos técnicos de medicamentos presenta desafíos críticos para los farmacéuticos en su labor diaria:
+*   **Complejidad y Densidad de Información:** Los prospectos médicos contienen lenguaje altamente clínico, tipografía diminuta y densidades densas de texto que ralentizan la consulta rápida en el mostrador o laboratorio.
+*   **Falta de Herramientas de Consulta Interactiva y Manos Libres:** Durante la dispensación o preparación, los profesionales farmacéuticos tienen las manos ocupadas y necesitan acceder a respuestas clínicas (dosis, contraindicaciones, interacciones) de forma auditiva y concisa.
+*   **Riesgos en la Dispensación:** Errores al identificar interacciones medicamentosas o contraindicaciones críticas de prospectos extensos pueden poner en peligro la salud de los clientes y la responsabilidad del profesional.
 
 ### 💡 La Solución Propuesta
-**PharmaVox** propone un asistente inteligente y multimodal de **Voz y Pantalla Visual** que elimina las barreras físicas y cognitivas de la automedicación e interpretación de recetas.
+**PharmaVox** propone un asistente inteligente y multimodal de **Voz y Pantalla Visual** que asiste a los bioquímicos, farmacéuticos y personal técnico:
 *   **¿Cómo soluciona este problema?** 
-    1.  **Voz Interactiva:** Traduce las instrucciones médicas complejas a lenguaje natural conversacional, optimizando las respuestas para ser habladas fluidamente por lectores de pantalla y sistemas de audio (TTS).
-    2.  **Layout Visual Enriquecido para Computadoras:** Al mismo tiempo que el usuario escucha las indicaciones, el backend le provee al cliente web una estructura visual interactiva (`visual_layout`) en formato JSON. Esta incluye tarjetas por bloques, cronogramas interactivos de dosificación, alertas con semáforos de riesgo y tipografías legibles de alto contraste ideales para pantallas de computadores y tablets.
-    3.  **Procesamiento Directo de PDFs:** Permite al administrador cargar archivos PDF completos de prospectos médicos oficiales para que la IA los lea e interprete de forma nativa en segundos, eliminando la necesidad de transcripciones manuales o software OCR lento de terceros.
+    1.  **Voz Interactiva Farmacéutica:** Traduce las consultas clínicas a respuestas naturales cortas habladas fluidamente por el motor de voz neural en tiempo real (TTS), ideal para consultas manos libres en el laboratorio o farmacia.
+    2.  **Layout Visual Enriquecido para Computadoras:** Al mismo tiempo que el farmacéutico escucha las indicaciones, el backend provee al cliente web una estructura visual interactiva (`visual_layout`) en formato JSON. Esta incluye tarjetas por bloques, alertas con semáforos de riesgo clínicos y tipografías legibles de alto contraste.
+    3.  **Procesamiento y Gestión de PDFs:** Permite al administrador de la farmacia cargar archivos PDF completos de prospectos médicos oficiales para que la IA los lea, indexe y estructure de forma nativa en segundos, creando una base de conocimiento RAG local y segura.
 *   **👥 ¿Para quién funciona esta solución?**
-    *   **Adultos mayores** que requieren recordatorios claros y explicaciones pausadas.
-    *   **Personas con discapacidad visual** que dependen de interacciones por voz 100% accesibles.
-    *   **No nativos o personas con dificultades de lectura** que se benefician de explicaciones estructuradas en lenguaje simplificado.
-    *   **Público en general** que desea llevar un control riguroso de su calendario de dosificación sin confusión.
+    *   **Farmacéuticos y Bioquímicos** que requieren consultar interacciones críticas o posologías de forma inmediata.
+    *   **Personal de Farmacia y Auxiliares** que asisten en mostrador y necesitan guías rápidas legibles y estructuradas.
+    *   **Administradores de Farmacia** que gestionan la carga del catálogo oficial de prospectos autorizados en el sistema.
 
 ---
 
 ## 🚀 Características Clave
 
-*   **🔍 Multimodal PDF & Image Scan Engine:** Procesamiento y lectura inteligente de imágenes de cajas, recetas, y **documentos PDF completos de prospectos médicos**, utilizando la capacidad multimodal nativa de Google Gemini para interpretar textos complejos de múltiples páginas directamente.
-*   **🗣️ Vox Conversational Agent & STT:** Orquestación de preguntas y respuestas médicas adaptadas en un lenguaje comprensible y amigable, con soporte para consultas textuales y de audio/voz directa (Speech-to-Text).
-*   **💻 Interfaz Dual (Voz + Pantalla Visual):** Además de la comunicación accesible por voz, el backend genera estructuras JSON de datos visuales enriquecidas, permitiendo al frontend renderizar tarjetas dinámicas, cronogramas de tomas y resúmenes de alta visibilidad optimizados para pantallas de computadores y tablets.
-*   **📋 Simplificador de Prospectos:** Traducción automática de jerga técnica/clínica a explicaciones por bloques con formato limpio e interactivo.
-*   **🕒 Generador Inteligente de Horarios:** Creación dinámica de un calendario y planificador de tomas a partir de las instrucciones de la receta, imagen o PDF analizado.
+*   **🔍 RAG Multimodal PDF Engine:** Lectura y extracción inteligente de **documentos PDF completos de prospectos médicos oficiales** mediante Gemini 1.5 Flash, persistiendo sus campos clínicos y técnicos en la Base de Datos.
+*   **🗣️ Vox Assistant (Alexa-Style):** Orquestador de respuestas cortas adaptadas al entorno farmacéutico profesional en un lenguaje directo, seguro y libre de jerga redundante.
+*   **🎙️ TTS Neural en Base64 Integrado:** Generación de voz neural en el backend devuelta directamente en formato Base64 en la misma llamada del Asistente, permitiendo reproducción inmediata en mostrador o laboratorio.
+*   **💻 Interfaz Dual (Voz + Pantalla Visual):** Estructuras JSON enriquecidas para el frontend, con semáforos automáticos de riesgo de seguridad para interacciones clínicas.
 
 ---
 
 ## 🛠️ Stack Tecnológico
 
 *   **Framework Principal:** [FastAPI](https://fastapi.tiangolo.com/) (Asíncrono, de alto rendimiento, basado en tipado estricto con Pydantic v2).
-*   **Motor de Inteligencia Artificial:** [Google Generative AI SDK](https://github.com/google/generative-ai-python) (Procesamiento multimodal con **Gemini 1.5/2.0 Flash/Pro**).
+*   **Motor de Inteligencia Artificial:** [Google GenAI SDK (`google-genai`)](https://github.com/googleapis/python-genai) — SDK unificado de Google para **Gemini 2.5 Flash** con soporte multimodal nativo (PDFs, imágenes, voz).
 *   **Base de Datos Relacional (SQL):** **PostgreSQL** para contenedores y producción. Utiliza SQLite local en desarrollo como una alternativa ágil y sin dependencias adicionales de sistema.
 *   **Mapeador Objeto-Relacional (ORM):** **SQLAlchemy 2.0** (implementación moderna con tipados robustos `Mapped` y `mapped_column` para máxima seguridad y autocompletado en el IDE).
 *   **Contenedores e Infraestructura:** **Docker** y **Docker Compose** para orquestar y aislar los servicios de base de datos Postgres y el servidor web FastAPI con configuraciones de red y persistencia automatizadas.
 *   **Servidor ASGI:** [Uvicorn](https://www.uvicorn.org/) (Servidor asíncrono ultrarrápido).
+
+---
+
+## 🎙️ Asistente de Voz Standalone (Alejandro)
+
+El script `scripts/farmavox_voice_poc.py` es una **prueba de concepto (PoC)** de voz desarrollada por **Alejandro**.
+Valida el flujo completo STT → Gemini → TTS de forma standalone, **no forma parte del servidor**.
+Reutiliza `app/services/` en lugar de duplicar lógica.
+
+> **Para ejecutar el PoC:** `python scripts/farmavox_voice_poc.py` (requiere `SpeechRecognition`, `pyaudio`, `edge-tts`, `pygame`)
+>
+> **Audio de prueba:** `data/tests_audio/input.wav` — grabación WAV que Alejandro usó para validar el flujo.
+
+### Lo que Alejandro implementó
+
+| Módulo | Función | Estado |
+|--------|---------|--------|
+| `MemoriaSesion` | Historial de sesión en RAM (chat + PDFs + medicamentos) | ✅ Completado |
+| `responder_pregunta()` | Chat con Gemini 2.5 Flash con historial completo | ✅ Completado |
+| `analizar_pdf()` | Análisis multimodal de PDFs con prompt estructurado | ✅ Completado |
+| `reproducir_audio()` | TTS con Edge TTS (voz neural `es-MX-DaliaNeural`) | ✅ Completado |
+| `escuchar()` | STT con SpeechRecognition + Google | ✅ Completado |
+| `SYSTEM_PROMPT` | Personalidad de FarmaVox farmacéutico colega | ✅ Completado |
+| `PROMPT_ANALISIS_PDF` | Extracción de ~15 campos farmacéuticos del PDF | ✅ Completado |
+
+### Integración al Backend
+
+La lógica de Alejandro fue extraída a servicios reutilizables del backend:
+
+```
+scripts/farmavox_voice_poc.py  (⚠️ PoC de voz — NO parte del servidor)
+  └── importa app/services/gemini_service  →  misma lógica que POST /api/v1/ask
+  └── importa app/services/pdf_service     →  misma lógica que POST /api/v1/scan
+
+Origen de la lógica (Alejandro → codebase):
+  responder_pregunta()  →  gemini_service.ask_assistant()
+  analizar_pdf()        →  pdf_service.analyze_pdf()
+  PROMPT_ANALISIS_PDF   →  pdf_service.PROMPT_ANALISIS_PDF
+  SYSTEM_PROMPT         →  gemini_service.SYSTEM_PROMPT
+
+Carpetas de trabajo del PoC:
+  data/pdfs_pendientes/     — PDFs a analizar
+  data/resultados_analisis/ — JSONs extraídos
+  data/tests_audio/         — input.wav (audio de prueba de Alejandro)
+```
+
+---
+
+## 📂 Arquitectura de Servicios y Archivos
+
+```
+app/
+├── api/
+│   └── endpoints/
+│       ├── assistant.py    # ✅ Vox Assistant (RAG estricto sobre BD + TTS neural en base64)
+│       ├── admin_users.py  # ✅ CRUD de usuarios seguro con contraseñas encriptadas (admin)
+│       └── admin_pdfs.py   # ✅ CRUD de prospectos PDF físicos con almacenamiento local (admin)
+├── services/
+│   ├── gemini_service.py   # ✅ Integración con Gemini 1.5 Flash estable para consultas conversacionales
+│   └── pdf_service.py      # ✅ Procesamiento y análisis de prospectos médicos en PDF
+├── schemas/
+│   ├── assistant.py        # ✅ Estructuras JSON del asistente (layouts, respuestas visuales y TTS)
+│   └── user.py             # ✅ Esquemas de usuario para CRUD con seguridad de contraseñas
+├── models/
+│   ├── user.py             # ✅ Modelo de Usuario SQLAlchemy (con hashed_password)
+│   ├── leaflet_pdf.py      # ✅ Modelo de PDFs persistidos e información JSON indexada
+│   └── medication.py       # ✅ Modelo RAG para indexado local y conocimiento del asistente
+├── core/
+│   ├── config.py           # ✅ Carga centralizada de variables de entorno (.env)
+│   └── security.py         # ✅ Hashing nativo y verificación de contraseñas mediante PBKDF2
+└── tests/
+    ├── test_services.py          # ✅ Pruebas unitarias de servicios de IA con mocks
+    └── test_integration_flow.py  # ✅ Suite de integración de extremo a extremo de todo el sistema
+```
 
 ---
 
@@ -117,3 +189,10 @@ uvicorn app.main:app --reload
 Una vez iniciado, podrás interactuar con la API y probar sus endpoints visualmente en:
 *   Interactive Swagger UI: `http://127.0.0.1:8000/docs`
 *   ReDoc alternative view: `http://127.0.0.1:8000/redoc`
+
+### 6. Ejecutar la Suite de Pruebas (Tests)
+Para ejecutar todas las pruebas automatizadas del sistema (incluyendo los tests unitarios de servicios y la nueva suite de integración de extremo a extremo con base de datos SQLite en memoria):
+```bash
+# Ejecutar todas las pruebas con detalles de salida
+pytest -v
+```

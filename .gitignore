@@ -149,3 +149,18 @@ cython_debug/
 .idea/
 *.swp
 *.swo
+
+# FarmaVox CLI — datos locales generados en tiempo de ejecución
+# Los PDFs analizados y resultados no van al repositorio
+# data/pdfs_pendientes/*.pdf
+data/resultados_analisis/*.json
+data/sesion_*.txt
+
+# El audio WAV de prueba es un archivo binario grande — no va al repositorio
+# Para obtenerlo: git show HEAD:Asistente/input.wav > data/tests_audio/input.wav
+data/tests_audio/*.wav
+data/tests_audio/*.mp3
+
+# Mantiene la estructura de carpetas en git (via .gitkeep)
+!data/pdfs_pendientes/.gitkeep
+!data/resultados_analisis/.gitkeep

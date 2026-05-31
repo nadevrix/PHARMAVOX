@@ -59,7 +59,7 @@ erDiagram
 
 ## 📝 Descripción de las Entidades
 
-1.  **USER (Usuario):** Representa a la persona física que interactúa con la aplicación (paciente o cuidador). Almacena su zona horaria para asegurar que los recordatorios de dosificación coincidan con su hora local exacta.
+1.  **USER (Usuario):** Representa a la persona física que interactúa con la aplicación (farmacéutico o administrador). Almacena su zona horaria para asegurar que los recordatorios coincidan con su hora local exacta.
 2.  **MEDICATION (Medicamento Cache):** Actúa como el catálogo e histórico de medicamentos procesados. Guarda la información estructurada devuelta por la IA de Gemini y el prospecto simplificado para evitar re-análisis costosos.
 3.  **SCAN_HISTORY (Historial de Escaneo):** Almacena cada captura de cámara y carga de imágenes que se realiza en el sistema, permitiendo al usuario revisar su historial visual en el computador.
 4.  **DOSE_REMINDER (Recordatorio de Dosis):** Contiene la lógica del planificador dinámico de tomas. Genera horarios precisos de tomas y almacena el texto hablado personalizado (`voice_reminder_text`) optimizado para alertas auditivas.

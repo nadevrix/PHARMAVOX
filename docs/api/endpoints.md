@@ -1,318 +1,244 @@
 # Especificación de Endpoints - PharmaVox API 📡🔌
 
-La API de PharmaVox proporciona una interfaz RESTful de alto rendimiento que expone los servicios de procesamiento de medicamentos por IA. Por defecto, todas las respuestas exitosas devuelven un código de estado `200 OK` y formato `application/json`.
+La API de PharmaVox proporciona una interfaz RESTful de alto rendimiento que expone servicios de procesamiento de medicamentos por IA, gestión de usuarios, carga de prospectos PDF, y respuestas conversacionales farmacéuticas por voz.
+
+> [!NOTE]
+> Todos los módulos con procesamiento inteligente utilizan **Gemini 1.5 Flash (alias estable `gemini-flash-latest`)** para máxima estabilidad, velocidad y eficiencia de costos.
 
 ---
 
-## 🚦 Endpoint de Estado y Salud (Healthcheck)
+## 🚦 1. Control de Acceso y Roles (RBAC Simulado)
+
+Para facilitar la integración ágil con el frontend y pruebas en Postman, el backend implementa un control de acceso basado en roles mediante la cabecera HTTP **`X-Role`**.
+
+### Roles Disponibles:
+1. **`admin`**: Acceso total a todos los endpoints de administración (Usuarios, PDFs, Asistente).
+2. **`pharmacist`**: Acceso de lectura y descarga de PDFs, y uso total del Asistente conversacional (acceso estándar).
+
+Si un endpoint requiere permisos elevados y se accede con un rol no autorizado o sin cabecera, la API devolverá de forma automática:
+*   **Código:** `403 Forbidden`
+*   **Response Body:** `{"detail": "Acceso denegado. Se requieren permisos de: [roles_autorizados]"}`
+
+---
+
+## 🚦 2. Endpoint de Estado y Salud (Healthcheck)
 
 ### `GET /health`
-Verifica el estado del backend y la conectividad con los servicios críticos (como la API de Gemini).
-
+Verifica el estado del backend, información básica del sistema y la conectividad con la API Key de Gemini.
+*   **Cabeceras:** Ninguna (Acceso Público).
 *   **Respuesta Exitosa (200 OK):**
     ```json
     {
       "status": "healthy",
+      "project": "PharmaVox Backend",
       "version": "1.0.0",
-      "services": {
-        "gemini_api": "connected"
+      "gemini_api_status": "configured"
+    }
+    ```
+
+---
+
+## 👤 3. Gestión CRUD de Usuarios (Solo Admin)
+> [!IMPORTANT]
+> **IMPLEMENTADO** — Protegido por rol `admin`. Almacena las contraseñas de forma segura en la base de datos usando el hashing PBKDF2-SHA256 con sal aleatoria. Las credenciales en texto plano o en hash **nunca** son expuestas en las respuestas JSON de salida (`UserOut`).
+
+### 3.1 Listar Usuarios
+`GET /api/v1/admin/users`
+Devuelve la lista completa de todos los usuarios registrados.
+*   **Cabeceras:** `X-Role: admin`
+*   **Respuesta Exitosa (200 OK):**
+    ```json
+    [
+      {
+        "email": "juan.perez@vox.com",
+        "full_name": "Juan Perez",
+        "role": "pharmacist",
+        "timezone": "America/Mexico_City",
+        "id": 1,
+        "created_at": "2026-05-31T03:30:00Z"
       }
+    ]
+    ```
+
+### 3.2 Crear Usuario
+`POST /api/v1/admin/users`
+Crea una nueva cuenta de usuario y encripta su contraseña.
+*   **Cabeceras:** `X-Role: admin`
+*   **Cuerpo (JSON Request Body):**
+    ```json
+    {
+      "email": "juan.perez@vox.com",
+      "full_name": "Juan Perez",
+      "role": "pharmacist",
+      "timezone": "America/Mexico_City",
+      "password": "supersecretpassword123"
     }
     ```
+    *   *Restricciones:* El email debe ser único y válido. La contraseña (`password`) debe tener al menos **6 caracteres**.
+*   **Respuesta Exitosa (201 Created):**
+    ```json
+    {
+      "email": "juan.perez@vox.com",
+      "full_name": "Juan Perez",
+      "role": "pharmacist",
+      "timezone": "America/Mexico_City",
+      "id": 1,
+      "created_at": "2026-05-31T03:30:00Z"
+    }
+    ```
+
+### 3.3 Modificar Usuario
+`PUT /api/v1/admin/users/{user_id}`
+Actualiza parcialmente o en su totalidad los metadatos o contraseña de un usuario existente.
+*   **Cabeceras:** `X-Role: admin`
+*   **Cuerpo (JSON Request Body - Campos opcionales):**
+    ```json
+    {
+      "full_name": "Juan Perez Modificado",
+      "password": "newsecurepassword456"
+    }
+    ```
+*   **Respuesta Exitosa (200 OK):**
+    ```json
+    {
+      "email": "juan.perez@vox.com",
+      "full_name": "Juan Perez Modificado",
+      "role": "pharmacist",
+      "timezone": "America/Mexico_City",
+      "id": 1,
+      "created_at": "2026-05-31T03:30:00Z"
+    }
+    ```
+
+### 3.4 Eliminar Usuario
+`DELETE /api/v1/admin/users/{user_id}`
+Elimina definitivamente un usuario de la base de datos.
+*   **Cabeceras:** `X-Role: admin`
+*   **Respuesta Exitosa (204 No Content):** (Sin cuerpo de respuesta).
 
 ---
 
-## 🔍 Módulo 1: Escáner y OCR de Medicamentos
+## 📄 4. Gestión CRUD de PDFs de Prospectos Médicos
+> [!IMPORTANT]
+> **IMPLEMENTADO** — Carga archivos PDF oficiales, los analiza automáticamente de forma multimodal mediante Gemini 1.5 Flash para extraer ~15 propiedades farmacéuticas y los indexa en la base de datos local para el motor conversacional (RAG).
 
-### `POST /api/v1/scan`
-Recibe una imagen (caja de medicamento, frasco o receta) y devuelve un análisis estructurado del contenido.
-
-*   **Request (Multipart Form-Data):**
-    *   `file`: Archivo de imagen (JPEG, PNG o WEBP).
-*   **Response (200 OK):**
+### 4.1 POST PDF (Cargar y Analizar por IA)
+`POST /api/v1/admin/pdfs`
+Carga un prospecto PDF en disco y lo analiza con Gemini en una sola operación.
+*   **Cabeceras:** `X-Role: admin`
+*   **Cuerpo (Multipart Form-Data):**
+    *   `file`: Archivo binario con extensión `.pdf`.
+*   **Respuesta Exitosa (201 Created):**
     ```json
     {
-      "success": true,
-      "medication": {
-        "name": "Ibuprofeno 600mg",
-        "active_ingredient": "Ibuprofeno",
-        "concentration": "600 mg",
-        "presentation": "Comprimidos (Caja de 20 unidades)",
-        "manufacturer": "Laboratorio Generics S.A."
-      },
-      "quick_summary": "Medicamento antiinflamatorio indicado para el alivio del dolor y la fiebre.",
-      "critical_warnings": [
-        "No tomar en caso de úlcera gástrica activa.",
-        "Evitar el consumo excesivo de alcohol durante el tratamiento."
-      ]
+      "id": 1,
+      "filename": "paracetamol_500.pdf",
+      "file_path": "data/pdfs/paracetamol_500.pdf",
+      "file_size": 240502,
+      "is_processed": true,
+      "created_at": "2026-05-31T03:31:10Z"
     }
     ```
 
----
-
-## 🗣️ Módulo 2: Vox Assistant (Chat por Voz Interactivo)
-
-### `POST /api/v1/ask`
-Permite al usuario realizar preguntas conversacionales sobre un medicamento analizado previamente. Ideal para interactuar por voz.
-
-*   **Request JSON Payload:**
-    ```json
-    {
-      "medication_context": "Ibuprofeno 600mg",
-      "question": "¿Lo puedo tomar con el estómago vacío?",
-      "conversation_history": []
-    }
-    ```
-*   **Response (200 OK):**
-    ```json
-    {
-      "text_response": "Se recomienda encarecipadamente tomar el ibuprofeno con comida o después de comer para evitar la irritación del estómago.",
-      "voice_response": "Es mejor que tomes el ibuprofeno acompañado de comida o con un vaso de leche. Así protegerás tu estómago.",
-      "visual_layout": {
-        "display_mode": "card",
-        "card_type": "warning",
-        "title": "Instrucción de Consumo",
-        "content_bullets": [
-          "Tomar con alimentos o leche.",
-          "Evita la irritación del estómago."
-        ],
-        "highlight_color": "#E11D48"
-      },
-      "audio_chunks": []
-    }
-    ```
-
----
-
-## 📋 Módulo 3: Simplificador de Prospectos
-
-### `POST /api/v1/simplify`
-Simplifica las complejas instrucciones de un prospecto de medicamento, dividiéndolas en tarjetas de fácil lectura adaptadas a pacientes vulnerables.
-
-*   **Request JSON Payload:**
-    ```json
-    {
-      "raw_text": "[Texto largo copiado del prospecto u obtenido por OCR...]"
-    }
-    ```
-*   **Response (200 OK):**
-    ```json
-    {
-      "simplified_title": "Guía Fácil de Ibuprofeno 600mg",
-      "sections": [
-        {
-          "title": "¿Para qué sirve?",
-          "description": "Sirve para calmar dolores comunes de cabeza, dientes, y reducir la fiebre o inflamación.",
-          "icon": "pain_relief"
-        },
-        {
-          "title": "¿Cómo tomarlo?",
-          "description": "Toma 1 pastilla cada 8 horas, preferiblemente con alimentos. No tomes más de 3 al día.",
-          "icon": "dosage"
-        },
-        {
-          "title": "¡Cuidado con esto!",
-          "description": "Si tienes problemas de estómago frecuentes o estás embarazada, no debes tomarlo sin consultar a tu médico.",
-          "icon": "warning"
-        }
-      ]
-    }
-    ```
-
----
-
-## 🕒 Módulo 4: Generador de Horarios y Dosificación
-
-### `POST /api/v1/schedule`
-Crea un calendario de tomas estructurado a partir del prospecto o la indicación de la receta médica.
-
-*   **Request JSON Payload:**
-    ```json
-    {
-      "medication_name": "Ibuprofeno 600mg",
-      "instructions": "Tomar una cápsula cada 8 horas por 5 días empezando mañana a las 8 AM"
-    }
-    ```
-*   **Response (200 OK):**
-    ```json
-    {
-      "schedule_plan": {
-        "medication_name": "Ibuprofeno 600mg",
-        "duration_days": 5,
-        "interval_hours": 8,
-        "daily_tome_times": [
-          "08:00",
-          "16:00",
-          "00:00"
-        ],
-        "reminders": [
-          {
-            "time": "08:00",
-            "voice_reminder_text": "Es hora de tu toma de Ibuprofeno seiscientos miligramos."
-          },
-          {
-            "time": "16:00",
-            "voice_reminder_text": "Recuerda tomar tu dosis de Ibuprofeno seiscientos miligramos."
-          },
-          {
-            "time": "00:00",
-            "voice_reminder_text": "Toma final del día de tu medicamento."
-          }
-        ]
-      }
-    }
-    ```
-
----
-
-## 🔒 Módulo 5: Panel de Administración y Farmacia (Proyectados - Tarea S-2)
-
-Estos endpoints proveen los servicios dedicados para la Aplicación de Administración y la Aplicación de Farmacia. Cada endpoint cuenta con validación de roles en cabecera a través del token JWT del usuario (`Authorization: Bearer <token>`).
-
-### 👤 5.1 Gestión CRUD de Usuarios
-*   **Autorización:** Únicamente **Administrador (`admin`)**. Los farmacéuticos reciben `403 Forbidden`.
-
-#### `GET /api/v1/admin/users`
-Lista todos los usuarios del sistema.
-*   **Response (200 OK):**
+### 4.2 Listar PDFs Registrados
+`GET /api/v1/pdfs`
+Devuelve el catálogo de todos los prospectos PDF que ya han sido procesados en el sistema.
+*   **Cabeceras:** `X-Role: admin` o `X-Role: pharmacist`
+*   **Respuesta Exitosa (200 OK):**
     ```json
     [
       {
         "id": 1,
-        "email": "alejandro@pharmavox.com",
-        "full_name": "Alejandro Pérez",
-        "role": "pharmacist",
-        "is_active": true
-      },
-      {
-        "id": 2,
-        "email": "sergio@pharmavox.com",
-        "full_name": "Sergio Gómez",
-        "role": "admin",
-        "is_active": true
+        "filename": "paracetamol_500.pdf",
+        "file_path": "data/pdfs/paracetamol_500.pdf",
+        "file_size": 240502,
+        "is_processed": true,
+        "created_at": "2026-05-31T03:31:10Z"
       }
     ]
     ```
 
-#### `POST /api/v1/admin/users`
-Crea una nueva cuenta de usuario en el sistema.
-*   **Request JSON Payload:**
+### 4.3 Modificar Metadatos de PDF
+`PUT /api/v1/admin/pdfs/{pdf_id}`
+Modifica datos administrativos de un PDF (por ejemplo, renombrar visualmente el archivo).
+*   **Cabeceras:** `X-Role: admin`
+*   **Cuerpo (JSON Request Body):**
     ```json
     {
-      "email": "nuevo.farmaceutico@pharmavox.com",
-      "full_name": "Laura Díaz",
-      "role": "pharmacist",
-      "password": "secure_password_123"
+      "filename": "Prospecto_Oficial_Paracetamol_500.pdf"
     }
     ```
-*   **Response (201 Created):**
+*   **Respuesta Exitosa (200 OK):**
     ```json
     {
-      "success": true,
-      "user_id": 3,
-      "message": "Usuario con rol 'pharmacist' creado exitosamente."
+      "id": 1,
+      "filename": "Prospecto_Oficial_Paracetamol_500.pdf",
+      "file_path": "data/pdfs/paracetamol_500.pdf",
+      "file_size": 240502,
+      "is_processed": true,
+      "created_at": "2026-05-31T03:31:10Z"
     }
     ```
 
-#### `DELETE /api/v1/admin/users/{user_id}`
-Suspende o elimina una cuenta de usuario del sistema.
-*   **Response (200 OK):**
-    ```json
-    {
-      "success": true,
-      "message": "Cuenta de usuario desactivada exitosamente."
-    }
-    ```
+### 4.4 Descargar Archivo PDF
+`GET /api/v1/pdfs/{pdf_id}/download`
+Transmite en tiempo real el archivo binario PDF almacenado físicamente en el servidor. Excelente para renderizar en visualizadores de PDF interactivos de React/Vue.
+*   **Cabeceras:** `X-Role: admin` o `X-Role: pharmacist`
+*   **Respuesta Exitosa (200 OK):** Archivo binario transmitido por stream con cabecera `Content-Type: application/pdf`.
+
+### 4.5 Eliminar PDF
+`DELETE /api/v1/admin/pdfs/{pdf_id}`
+Elimina físicamente el PDF del disco del servidor y remueve todos sus registros y datos médicos asociados de la base de datos de PharmaVox.
+*   **Cabeceras:** `X-Role: admin`
+*   **Respuesta Exitosa (204 No Content):** (Sin cuerpo de respuesta).
 
 ---
 
-### 📄 5.2 CRUD y Visualización de PDFs de Prospectos
-*   **Autorización:** Carga y Borrado: **Administrador (`admin`)**. Visualización y Listado: **Administrador (`admin`)** y **Farmacéutico (`pharmacist`)**.
+## 🗣️ 5. Vox Assistant (RAG & Audio Neural en Tiempo Real)
+> [!IMPORTANT]
+> **IMPLEMENTADO** — El núcleo del asistente farmacéutico inteligente de PharmaVox.
+> *   **RAG Estricto**: Su conocimiento está limitado **estrictamente** a los PDFs cargados en la Base de Datos. Si no hay PDFs, o si se pregunta por un fármaco ausente, responde amablemente indicando que no cuenta con esa información.
+> *   **Audio Directo en Base64**: La respuesta JSON incluye el audio MP3 generado con la voz neural de Microsoft `es-MX-DaliaNeural` codificado en una cadena de caracteres base64 (`audio_base64`), reduciendo la latencia de integración a cero para que el frontend reproduzca el audio de inmediato.
 
-#### `POST /api/v1/admin/pdfs` (Solo Admin)
-Permite al administrador cargar un archivo PDF de un prospecto oficial en el servidor.
-*   **Request (Multipart Form-Data):**
-    *   `file`: Archivo PDF oficial (`application/pdf`).
-    *   `medication_name`: "Paracetamol 500mg".
-*   **Response (201 Created):**
+### 5.1 Preguntar al Asistente (Conversacional)
+`POST /api/v1/ask`
+*   **Cabeceras:** Ninguna (Acceso Público para cualquier Rol).
+*   **Cuerpo (JSON Request Body):**
     ```json
     {
-      "success": true,
-      "pdf_id": 12,
-      "file_path": "/uploads/leaflets/paracetamol_500.pdf",
-      "message": "PDF cargado y procesado exitosamente por la IA."
+      "question": "¿Cuáles son las indicaciones del paracetamol?"
     }
     ```
-
-#### `DELETE /api/v1/admin/pdfs/{pdf_id}` (Solo Admin)
-Elimina un archivo PDF de prospecto del sistema.
-*   **Response (200 OK):**
+*   **Respuesta Exitosa (200 OK):**
     ```json
     {
-      "success": true,
-      "message": "Archivo PDF y su caché de IA eliminados correctamente."
-    }
-    ```
-
-#### `GET /api/v1/pdfs` (Admin y Pharmacist)
-Lista todos los archivos PDF oficiales disponibles en el catálogo médico.
-*   **Response (200 OK):**
-    ```json
-    [
-      {
-        "id": 12,
-        "medication_name": "Paracetamol 500mg",
-        "file_name": "paracetamol_500.pdf",
-        "upload_date": "2026-05-30T10:00:00Z"
-      }
-    ]
-    ```
-
-#### `GET /api/v1/pdfs/{pdf_id}/download` (Admin y Pharmacist)
-Transmite el archivo binario PDF del prospecto oficial para que el frontend lo pueda descargar o renderizar en un visor interactivo integrado en la interfaz cuando el usuario haga clic en él.
-*   **Response (200 OK):**
-    *   **Content-Type:** `application/pdf`
-    *   **Cuerpo de la Respuesta:** Flujo de bytes binario directo del archivo PDF original.
-
----
-
-### 🎙️ 5.3 Modo Voz sobre Recursos PDF
-*   **Autorización:** **Administrador (`admin`)** y **Farmacéutico (`pharmacist`)**. Ambos usuarios pueden entrar en el modo voz en sus respectivas aplicaciones para consultar cualquier prospecto.
-
-#### `POST /api/v1/assistant/ask-pdf`
-Permite interrogar a la IA en lenguaje conversacional o mediante voz sobre cualquier PDF médico cargado en el sistema, utilizando la ingesta nativa de documentos de Gemini.
-*   **Request JSON Payload:**
-    ```json
-    {
-      "pdf_id": 12,
-      "question": "¿Cuáles son las contraindicaciones del paracetamol para personas con problemas hepáticos?",
-      "conversation_history": []
-    }
-    ```
-*   **Response (200 OK):**
-    ```json
-    {
-      "text_response": "El Paracetamol está contraindicado o requiere supervisión estricta en pacientes con insuficiencia hepática grave o alcoholismo activo, debido al riesgo incrementado de toxicidad hepática por sobredosis.",
-      "voice_response": "Si tienes problemas de hígado o consumo frecuente de alcohol, debes tener mucho cuidado. El paracetamol puede sobrecargar tu hígado. Consulta siempre con tu médico la dosis máxima.",
+      "text_response": "Tempra Forte de paracetamol alivia dolor y fiebre. Toma una tableta cada seis horas.",
+      "voice_response": "Tempra Forte de paracetamol alivia dolor y fiebre. Toma una tableta cada seis horas.",
       "visual_layout": {
         "display_mode": "card",
-        "card_type": "danger",
-        "title": "Alerta de Toxicidad Hepática",
+        "card_type": "info",
+        "title": "Información Farmacéutica",
         "content_bullets": [
-          "Evitar en caso de insuficiencia hepática grave.",
-          "Riesgo de daño en combinación con alcohol."
+          "Tempra Forte de paracetamol alivia dolor y fiebre",
+          "Toma una tableta cada seis horas"
         ],
-        "highlight_color": "#DC2626"
+        "highlight_color": "#3B82F6"
       },
-      "sources": [
-        {
-          "pdf_id": 12,
-          "document_name": "paracetamol_500.pdf",
-          "page_number": 4,
-          "section_title": "4.3 Contraindicaciones y advertencias especiales",
-          "matched_text": "La administración de paracetamol en pacientes con insuficiencia hepática grave o en combinación con alcoholismo crónico incrementa significativamente el riesgo de daño hepatotóxico severo."
-        }
-      ]
+      "audio_chunks": [
+        "/api/v1/assistant/audio"
+      ],
+      "audio_base64": "SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjYwLjEwMC4xMDBh..."
     }
     ```
+
+    #### Comportamiento del Layout Visual Automático:
+    *   **Advertencias / Peligros:** Si la IA detecta palabras críticas (como "contraindicado", "reacción adversa", "no tomar", "peligro"), configura la respuesta a `card_type: "warning"` con color de destaque rojo (`#E11D48`).
+    *   **Dosificaciones:** Si la pregunta es sobre cómo tomar o frecuencias de tomas, configura a `card_type: "info"` con color celeste de destaque (`#0EA5E9`).
+    *   **General:** Respuestas normales se configuran a `card_type: "info"` con color azul (`#3B82F6`).
+
+### 5.2 Obtener Archivo Físico MP3
+`GET /api/v1/assistant/audio`
+Permite descargar o reproducir directamente por stream el archivo físico MP3 con la última respuesta por voz generada.
+*   **Cabeceras:** Ninguna (Acceso Público).
+*   **Respuesta Exitosa (200 OK):** Archivo de audio MP3 con cabecera `Content-Type: audio/mpeg`.
 

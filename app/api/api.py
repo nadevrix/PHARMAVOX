@@ -1,10 +1,9 @@
 from fastapi import APIRouter
-from app.api.endpoints import scan, assistant, simplifier, scheduler
+from app.api.endpoints import assistant, admin_users, admin_pdfs
 
 api_router = APIRouter()
 
 # Registro de sub-routers con sus respectivos prefijos y etiquetas semánticas
-api_router.include_router(scan.router, tags=["OCR & Scanner"])
 api_router.include_router(assistant.router, tags=["Vox Assistant"])
-api_router.include_router(simplifier.router, tags=["Leaflet Simplifier"])
-api_router.include_router(scheduler.router, tags=["Dosage Scheduler"])
+api_router.include_router(admin_users.router, tags=["Admin Users"])
+api_router.include_router(admin_pdfs.router, tags=["Admin PDFs"])

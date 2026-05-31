@@ -1,0 +1,392 @@
+{
+	"info": {
+		"_postman_id": "c1a9657b-7b00-4b2a-8f81-2292f98bb2c2",
+		"name": "PharmaVox API - Pruebas de Integración y CRUD",
+		"description": "Colección de Postman completa para probar los servicios conversacionales, análisis PDF por IA, CRUD de Usuarios y CRUD de PDFs en PharmaVox, validando permisos por rol (X-Role).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health & Healthcheck",
+			"item": [
+				{
+					"name": "Verificar Estado de Salud",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Verifica si el servidor de PharmaVox está activo y si la API Key de Gemini está configurada adecuadamente."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Vox Assistant (RAG & Audio)",
+			"item": [
+				{
+					"name": "Consultar Asistente (Conversacional RAG)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"question\": \"¿Cuáles son las contraindicaciones del paracetamol?\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/ask",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"ask"
+							]
+						},
+						"description": "Envía una pregunta de voz/texto al chat de FarmaVox. Su conocimiento está estrictamente limitado a los PDFs en la BD. La respuesta JSON incluye el audio MP3 codificado directamente en Base64 (`audio_base64`)."
+					},
+					"response": []
+				},
+				{
+					"name": "Descargar / Reproducir Audio TTS",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/assistant/audio",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"assistant",
+								"audio"
+							]
+						},
+						"description": "Descarga el archivo de audio MP3 temporal generado en el backend con la última respuesta del asistente."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Gestión de PDFs de Prospectos (CRUD)",
+			"item": [
+				{
+					"name": "POST PDF (Cargar y Procesar con IA)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Role",
+								"value": "admin",
+								"type": "text",
+								"description": "Requiere 'admin' para procesar"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"description": "Sube un archivo PDF oficial del prospecto médico",
+									"type": "file",
+									"src": ""
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/pdfs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"pdfs"
+							]
+						},
+						"description": "Carga un PDF, extrae su información estructurada con Gemini 1.5 Flash, y lo persiste en la base de datos como base de conocimiento para RAG."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar PDFs (Admin / Pharmacist)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Role",
+								"value": "pharmacist",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/pdfs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"pdfs"
+							]
+						},
+						"description": "Lista todos los PDFs procesados y disponibles en la base de datos de PharmaVox."
+					},
+					"response": []
+				},
+				{
+					"name": "Modificar Metadatos de PDF (Solo Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "X-Role",
+								"value": "admin",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"filename\": \"Prospecto_Paracetamol_Modificado.pdf\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/pdfs/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"pdfs",
+								"1"
+							]
+						},
+						"description": "Permite al administrador modificar metadatos de un prospecto."
+					},
+					"response": []
+				},
+				{
+					"name": "Descargar PDF Binario (Visor Frontend)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Role",
+								"value": "pharmacist",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/pdfs/1/download",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"pdfs",
+								"1",
+								"download"
+							]
+						},
+						"description": "Transmite el archivo PDF para renderizado en el visualizador interactivo del frontend."
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar PDF (Solo Admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-Role",
+								"value": "admin",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/pdfs/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"pdfs",
+								"1"
+							]
+						},
+						"description": "Elimina el PDF del disco físico y limpia su registro de la base de datos de PharmaVox."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Gestión CRUD de Usuarios (Solo Admin)",
+			"item": [
+				{
+					"name": "Crear Usuario (POST)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "X-Role",
+								"value": "admin",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"sergio@pharmavox.com\",\n  \"full_name\": \"Sergio Admin\",\n  \"role\": \"admin\",\n  \"timezone\": \"America/Caracas\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"users"
+							]
+						},
+						"description": "Crea una nueva cuenta de usuario en el sistema con un rol y zona horaria."
+					},
+					"response": []
+				},
+				{
+					"name": "Listar Usuarios (GET)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Role",
+								"value": "admin",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/users",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"users"
+							]
+						},
+						"description": "Devuelve la lista completa de todos los usuarios registrados en el sistema."
+					},
+					"response": []
+				},
+				{
+					"name": "Modificar Usuario (PUT)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "X-Role",
+								"value": "admin",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"full_name\": \"Sergio Modificado\",\n  \"role\": \"pharmacist\",\n  \"password\": \"newpassword456\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/users/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"users",
+								"1"
+							]
+						},
+						"description": "Actualiza metadatos parciales o totales de un usuario registrado."
+					},
+					"response": []
+				},
+				{
+					"name": "Eliminar Usuario (DELETE)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-Role",
+								"value": "admin",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/users/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"admin",
+								"users",
+								"1"
+							]
+						},
+						"description": "Borra definitivamente a un usuario del sistema."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8000",
+			"type": "string"
+		}
+	]
+}
