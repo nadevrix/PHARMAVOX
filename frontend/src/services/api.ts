@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = 'http://localhost:8000';
 const API_URL = `${API_BASE}/api/v1`;
 
 // ============================================================
@@ -174,12 +174,12 @@ export const api = {
   scanMedication: async (file: File): Promise<ScanResponse> => {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     const response = await fetch(`${API_URL}/scan`, {
       method: 'POST',
       body: formData,
     });
-    
+
     if (!response.ok) throw new Error('Error al escanear medicamento');
     return response.json();
   },
@@ -196,7 +196,7 @@ export const api = {
         conversation_history: []
       })
     });
-    
+
     if (!response.ok) throw new Error('Error en la consulta al asistente');
     return response.json();
   },
@@ -209,7 +209,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ raw_text: rawText })
     });
-    
+
     if (!response.ok) throw new Error('Error al simplificar el texto');
     return response.json();
   },
@@ -225,92 +225,9 @@ export const api = {
         instructions: instructions
       })
     });
-    
+
     if (!response.ok) throw new Error('Error al generar la agenda de dosificación');
     return response.json();
   },
 
-  // ── Módulo 5: Admin - CRUD Usuarios ────────────────────
-  // GET /api/v1/admin/users
-  getUsers: async (): Promise<UserResponse[]> => {
-    const response = await fetch(`${API_URL}/admin/users`);
-    if (!response.ok) throw new Error('Error al obtener la lista de usuarios');
-    return response.json();
-  },
-
-  // POST /api/v1/admin/users
-  createUser: async (data: CreateUserRequest): Promise<CreateUserResponse> => {
-    const response = await fetch(`${API_URL}/admin/users`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    if (!response.ok) throw new Error('Error al crear el usuario');
-    return response.json();
-  },
-
-  // DELETE /api/v1/admin/users/{user_id}
-  deleteUser: async (userId: number): Promise<DeleteResponse> => {
-    const response = await fetch(`${API_URL}/admin/users/${userId}`, {
-      method: 'DELETE'
-    });
-    if (!response.ok) throw new Error('Error al eliminar el usuario');
-    return response.json();
-  },
-
-  // ── Módulo 5: Admin - CRUD PDFs ────────────────────────
-  // POST /api/v1/admin/pdfs
-  uploadPDF: async (file: File, medicationName: string): Promise<PDFUploadResponse> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('medication_name', medicationName);
-
-    const response = await fetch(`${API_URL}/admin/pdfs`, {
-      method: 'POST',
-      body: formData,
-    });
-    if (!response.ok) throw new Error('Error al subir el archivo PDF');
-    return response.json();
-  },
-
-  // DELETE /api/v1/admin/pdfs/{pdf_id}
-  deletePDF: async (pdfId: number): Promise<DeleteResponse> => {
-    const response = await fetch(`${API_URL}/admin/pdfs/${pdfId}`, {
-      method: 'DELETE'
-    });
-    if (!response.ok) throw new Error('Error al eliminar el archivo PDF');
-    return response.json();
-  },
-
-  // ── Módulo 5: Lectura de PDFs (Admin + Pharmacist) ─────
-  // GET /api/v1/pdfs
-  listPDFs: async (): Promise<PDFListItem[]> => {
-    const response = await fetch(`${API_URL}/pdfs`);
-    if (!response.ok) throw new Error('Error al obtener el catálogo de PDFs');
-    return response.json();
-  },
-
-  // GET /api/v1/pdfs/{pdf_id}/download
-  downloadPDF: async (pdfId: number): Promise<string> => {
-    const response = await fetch(`${API_URL}/pdfs/${pdfId}/download`);
-    if (!response.ok) throw new Error('Error al descargar el PDF');
-    const blob = await response.blob();
-    return URL.createObjectURL(blob);
-  },
-
-  // ── Módulo 5: Asistente de Voz sobre PDFs ─────────────
-  // POST /api/v1/assistant/ask-pdf
-  askAboutPDF: async (pdfId: number, question: string, conversationHistory: string[] = []): Promise<AskPDFResponse> => {
-    const response = await fetch(`${API_URL}/assistant/ask-pdf`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        pdf_id: pdfId,
-        question: question,
-        conversation_history: conversationHistory
-      })
-    });
-    if (!response.ok) throw new Error('Error al consultar sobre el PDF');
-    return response.json();
-  }
 };

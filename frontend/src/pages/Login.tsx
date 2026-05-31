@@ -35,13 +35,13 @@ export function Login() {
         
         <div className="relative z-10 flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700 shadow-sm">
-              <BrainCircuit className="w-8 h-8 text-white" />
-            </div>
+          <div className="flex items-center gap-4">
+            <img src="/logo_final.jpg" alt="PharmaVox Logo" className="w-14 h-auto bg-white p-1.5 rounded-2xl object-contain shadow-[0_0_20px_rgba(255,255,255,0.15)] border border-white/20" />
             <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">PharmaVox</h1>
-              <p className="text-[10px] font-bold text-emerald-400 tracking-wider">CONTROL DE CALIDAD POR VOZ</p>
+              <h1 className="text-3xl font-black text-white uppercase" style={{ letterSpacing: '-0.03em' }}>
+                PHARMAVOX <span className="text-emerald-400 text-xl align-top">•</span>
+              </h1>
+              <p className="text-[10px] font-bold text-emerald-400/80 tracking-widest uppercase mt-0.5">CONTROL DE CALIDAD POR VOZ</p>
             </div>
           </div>
 
