@@ -37,12 +37,6 @@ export function Login() {
     executeLogin(email, password);
   };
 
-  const loginAs = (testEmail: string, testPass: string) => {
-    setEmail(testEmail);
-    setPassword(testPass);
-    executeLogin(testEmail, testPass);
-  };
-
   return (
     <div className="min-h-screen flex">
       {/* Left Panel */}
@@ -168,65 +162,7 @@ export function Login() {
               </div>
             </form>
 
-            <div className="mt-8">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-200" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-slate-400 text-[11px] tracking-widest font-bold uppercase">
-                    Acceso de prueba rápido
-                  </span>
-                </div>
-              </div>
 
-              <div className="mt-6 space-y-3">
-                <button
-                  onClick={() => loginAs('carlos.mendoza@farmacorp.com', 'password123')}
-                  disabled={loading}
-                  className="w-full flex justify-between items-center p-3 sm:px-4 border border-slate-200 rounded-xl shadow-sm bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-left group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                    <div>
-                      <div className="text-sm font-bold text-slate-800 group-hover:text-[#004b7c] transition-colors">Carlos Mendoza</div>
-                      <div className="text-[11px] text-slate-500 font-medium mt-0.5">carlos.mendoza@farmacorp.com</div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded uppercase tracking-wider">Operario</span>
-                </button>
-
-                <button
-                  onClick={() => loginAs('ana.gomez@farmacorp.com', 'password123')}
-                  disabled={loading}
-                  className="w-full flex justify-between items-center p-3 sm:px-4 border border-slate-200 rounded-xl shadow-sm bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-left group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                    <div>
-                      <div className="text-sm font-bold text-slate-800 group-hover:text-[#004b7c] transition-colors">Ana Gómez</div>
-                      <div className="text-[11px] text-slate-500 font-medium mt-0.5">ana.gomez@farmacorp.com</div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded uppercase tracking-wider">Operario</span>
-                </button>
-                
-                <button
-                  onClick={() => loginAs('sergio@pharmavox.com', 'miPasswordSeguro123')}
-                  disabled={loading}
-                  className="w-full flex justify-between items-center p-3 sm:px-4 border border-slate-200 rounded-xl shadow-sm bg-white hover:bg-slate-50 hover:border-slate-300 transition-all text-left group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-[#004b7c]"></div>
-                    <div>
-                      <div className="text-sm font-bold text-slate-800 group-hover:text-[#004b7c] transition-colors">Sergio Gómez</div>
-                      <div className="text-[11px] text-slate-500 font-medium mt-0.5">sergio@pharmavox.com</div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold text-[#004b7c] bg-blue-50 border border-blue-100 px-2 py-1 rounded uppercase tracking-wider">QA / Admin</span>
-                </button>
-              </div>
-            </div>
           </Card>
         </div>
       </div>
