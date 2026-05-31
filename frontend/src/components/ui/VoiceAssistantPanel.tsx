@@ -16,7 +16,7 @@ export function VoiceAssistantPanel({
   description = "Activa el modo IA y di 'PharmaVox' para iniciar una consulta clínica."
 }: VoiceAssistantPanelProps) {
   // Session States
-  const [isInIaMode, setIsInIaMode] = useState(false);
+  const [isInIaMode, setIsInIaMode] = useState(true);
   const [sessionTimeLeft, setSessionTimeLeft] = useState(1800); // 30 mins in seconds
   
   // Microphone & Speech States
@@ -26,7 +26,7 @@ export function VoiceAssistantPanel({
   // - 'listening' (yellow / esperando / capturing question)
   // - 'processing' / 'responding' (green / en funcionamiento / thinking or speaking)
   // - 'error' (red / falla o sin tokens)
-  const [state, setState] = useState<'inactive' | 'standby' | 'listening' | 'processing' | 'responding' | 'error'>('inactive');
+  const [state, setState] = useState<'inactive' | 'standby' | 'listening' | 'processing' | 'responding' | 'error'>('standby');
   const [question, setQuestion] = useState('');
   const [responseData, setResponseData] = useState<AskResponse | null>(null);
   const [chatHistory, setChatHistory] = useState<string[]>([]);
