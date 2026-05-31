@@ -2,6 +2,36 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const API_URL = `${API_BASE}/api/v1`;
 
 // ============================================================
+// Helper — Fetch con retry para cold starts de Railway
+// ============================================================
+
+async function fetchWithRetry(url: string, options?: RequestInit, retries = 2): Promise<Response> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeout);
+
+      if (!response.ok && attempt < retries && response.status >= 500) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      return response;
+    } catch (err) {
+      if (attempt === retries) throw err;
+      await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+    }
+  }
+  throw new Error('Failed after retries');
+}
+
+// ============================================================
 // INTERFACES — Módulo 1: Escáner OCR
 // ============================================================
 
@@ -37,6 +67,7 @@ export interface AskResponse {
   voice_response: string;
   visual_layout: VisualLayout;
   audio_chunks: string[];
+  audio_base64?: string;
 }
 
 // ============================================================
@@ -98,25 +129,25 @@ export interface UserResponse {
   email: string;
   full_name: string;
   role: 'pharmacist' | 'admin';
-  is_active: boolean;
+  timezone?: string;
+  created_at?: string;
 }
 
 export interface CreateUserRequest {
   email: string;
   full_name: string;
   role: 'pharmacist' | 'admin';
+  timezone?: string;
   password: string;
 }
 
 export interface CreateUserResponse {
-  success: boolean;
-  user_id: number;
-  message: string;
-}
-
-export interface DeleteResponse {
-  success: boolean;
-  message: string;
+  id: number;
+  email: string;
+  full_name: string;
+  role: 'pharmacist' | 'admin';
+  timezone?: string;
+  created_at?: string;
 }
 
 // ============================================================
@@ -125,35 +156,11 @@ export interface DeleteResponse {
 
 export interface PDFListItem {
   id: number;
-  medication_name: string;
-  file_name: string;
-  upload_date: string;
-}
-
-export interface PDFUploadResponse {
-  success: boolean;
-  pdf_id: number;
+  filename: string;
   file_path: string;
-  message: string;
-}
-
-// ============================================================
-// INTERFACES — Módulo 5: Asistente sobre PDFs
-// ============================================================
-
-export interface AskPDFSource {
-  pdf_id: number;
-  document_name: string;
-  page_number: number;
-  section_title: string;
-  matched_text: string;
-}
-
-export interface AskPDFResponse {
-  text_response: string;
-  voice_response: string;
-  visual_layout: VisualLayout;
-  sources: AskPDFSource[];
+  file_size: number;
+  is_processed: boolean;
+  created_at: string;
 }
 
 // ============================================================
@@ -162,20 +169,18 @@ export interface AskPDFResponse {
 
 export const api = {
   // ── Healthcheck ──────────────────────────────────────────
-  // GET /health
   healthCheck: async (): Promise<HealthResponse> => {
-    const response = await fetch(`${API_BASE}/health`);
+    const response = await fetchWithRetry(`${API_BASE}/health`);
     if (!response.ok) throw new Error('Error al verificar estado del sistema');
     return response.json();
   },
 
   // ── Módulo 1: Escáner OCR ──────────────────────────────
-  // POST /api/v1/scan
   scanMedication: async (file: File): Promise<ScanResponse> => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_URL}/scan`, {
+    const response = await fetchWithRetry(`${API_URL}/scan`, {
       method: 'POST',
       body: formData,
     });
@@ -185,9 +190,8 @@ export const api = {
   },
 
   // ── Módulo 2: Vox Assistant ────────────────────────────
-  // POST /api/v1/ask
   askAssistant: async (question: string, context: string): Promise<AskResponse> => {
-    const response = await fetch(`${API_URL}/ask`, {
+    const response = await fetchWithRetry(`${API_URL}/ask`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -202,9 +206,8 @@ export const api = {
   },
 
   // ── Módulo 3: Simplificador ────────────────────────────
-  // POST /api/v1/simplify
   simplifyText: async (rawText: string): Promise<SimplifyResponse> => {
-    const response = await fetch(`${API_URL}/simplify`, {
+    const response = await fetchWithRetry(`${API_URL}/simplify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ raw_text: rawText })
@@ -215,9 +218,8 @@ export const api = {
   },
 
   // ── Módulo 4: Planificador de Dosis ────────────────────
-  // POST /api/v1/schedule
   scheduleDosage: async (medicationName: string, instructions: string): Promise<ScheduleResponse> => {
-    const response = await fetch(`${API_URL}/schedule`, {
+    const response = await fetchWithRetry(`${API_URL}/schedule`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -230,4 +232,78 @@ export const api = {
     return response.json();
   },
 
+  // ── Módulo 5.1: Admin - Usuarios ───────────────────────
+  getUsers: async (role: string = 'admin'): Promise<UserResponse[]> => {
+    const response = await fetchWithRetry(`${API_URL}/admin/users`, {
+      headers: { 'X-Role': role }
+    });
+    if (!response.ok) throw new Error('Error al obtener la lista de usuarios');
+    return response.json();
+  },
+
+  createUser: async (data: CreateUserRequest, role: string = 'admin'): Promise<CreateUserResponse> => {
+    const response = await fetchWithRetry(`${API_URL}/admin/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Role': role
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || 'Error al crear el usuario');
+    }
+    return response.json();
+  },
+
+  deleteUser: async (userId: number, role: string = 'admin'): Promise<void> => {
+    const response = await fetchWithRetry(`${API_URL}/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: { 'X-Role': role }
+    });
+
+    if (!response.ok) throw new Error('Error al eliminar el usuario');
+  },
+
+  // ── Módulo 5.2: Admin - PDFs ──────────────────────────
+  uploadPDF: async (file: File, role: string = 'admin'): Promise<PDFListItem> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetchWithRetry(`${API_URL}/admin/pdfs`, {
+      method: 'POST',
+      headers: { 'X-Role': role },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || 'Error al subir el PDF');
+    }
+    return response.json();
+  },
+
+  deletePDF: async (pdfId: number, role: string = 'admin'): Promise<void> => {
+    const response = await fetchWithRetry(`${API_URL}/admin/pdfs/${pdfId}`, {
+      method: 'DELETE',
+      headers: { 'X-Role': role }
+    });
+
+    if (!response.ok) throw new Error('Error al eliminar el PDF');
+  },
+
+  // ── Módulo 5.2: Catálogo de PDFs ──────────────────────
+  listPDFs: async (role: string = 'pharmacist'): Promise<PDFListItem[]> => {
+    const response = await fetchWithRetry(`${API_URL}/pdfs`, {
+      headers: { 'X-Role': role }
+    });
+    if (!response.ok) throw new Error('Error al listar los PDFs');
+    return response.json();
+  },
+
+  downloadPDF: async (pdfId: number, role: string = 'pharmacist'): Promise<void> => {
+    window.open(`${API_URL}/pdfs/${pdfId}/download?x-role=${role}`, '_blank');
+  },
 };

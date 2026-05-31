@@ -1,28 +1,52 @@
-import { useState } from 'react';
-import { Send, Loader2, BrainCircuit, Mic, AlertTriangle, Pill } from 'lucide-react';
-import { api, type AskResponse } from '../../services/api';
+import { useState, useEffect } from 'react';
+import { Send, Loader2, BrainCircuit, AlertTriangle, BookOpen, HelpCircle } from 'lucide-react';
+import { api, type AskResponse, type PDFListItem } from '../../services/api';
 
 export function PDFAssistantPanel() {
-  const [medicationContext, setMedicationContext] = useState('');
+  const [pdfs, setPdfs] = useState<PDFListItem[]>([]);
+  const [selectedPdfId, setSelectedPdfId] = useState<string>('');
   const [question, setQuestion] = useState('');
-  const [state, setState] = useState<'idle' | 'processing' | 'responding' | 'error'>('idle');
+  const [state, setState] = useState<'idle' | 'loading_pdfs' | 'processing' | 'responding' | 'error'>('idle');
   const [responseData, setResponseData] = useState<AskResponse | null>(null);
   const [error, setError] = useState('');
 
+  const loadPDFs = async () => {
+    setState('loading_pdfs');
+    try {
+      const data = await api.listPDFs('pharmacist');
+      setPdfs(data);
+      if (data.length > 0) {
+        setSelectedPdfId(data[0].id.toString());
+      }
+      setState('idle');
+    } catch {
+      setError('No se pudo cargar la lista de prospectos desde el servidor.');
+      setState('error');
+    }
+  };
+
+  useEffect(() => {
+    loadPDFs();
+  }, []);
+
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!question.trim() || !medicationContext.trim()) return;
+    if (!question.trim()) return;
+
+    // Buscar el PDF seleccionado para mandar su nombre como contexto
+    const selectedPdf = pdfs.find(p => p.id.toString() === selectedPdfId);
+    const context = selectedPdf ? `Archivo PDF: ${selectedPdf.filename}` : '';
 
     setState('processing');
     setResponseData(null);
     setError('');
 
     try {
-      const data = await api.askAssistant(question, medicationContext);
+      const data = await api.askAssistant(question, context);
       setResponseData(data);
       setState('responding');
     } catch {
-      setError('Error al consultar la IA. Verifique la conexión con el backend.');
+      setError('Error al consultar el Asistente RAG. Verifique el backend.');
       setState('error');
     }
   };
@@ -44,37 +68,52 @@ export function PDFAssistantPanel() {
           📄 Consulta Inteligente RAG
         </div>
 
-        <h2 className="text-2xl font-extrabold text-white tracking-tight mb-2">
-          Asistente de Inteligencia Artificial
+        <h2 className="text-2xl font-black text-white tracking-tight mb-2 uppercase" style={{ letterSpacing: '-0.02em' }}>
+          Consulta de Documentación RAG
         </h2>
-        <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-          Escriba el contexto del medicamento y su pregunta. La IA procesará la información y generará una respuesta multimodal en tiempo real.
+        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-6">
+          Pregunte directamente sobre los prospectos clínicos indexados en la base vectorial del sistema.
         </p>
 
-        {/* Medication Context Input */}
+        {/* PDF Selection Dropdown */}
         <div className="mb-6 shrink-0">
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-            Contexto Médico (Medicamento o Tema)
+          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+            Seleccionar Prospecto Clínico de Referencia
           </label>
           <div className="relative">
-            <Pill className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              value={medicationContext}
-              onChange={(e) => setMedicationContext(e.target.value)}
-              placeholder="Ej. Ibuprofeno 600mg o Paracetamol..."
-              className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:bg-white/10 transition-all placeholder:text-slate-600"
-            />
+            <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            {state === 'loading_pdfs' ? (
+              <div className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-slate-400 text-sm animate-pulse">
+                Cargando prospectos médicos...
+              </div>
+            ) : pdfs.length === 0 ? (
+              <div className="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-rose-300 text-sm">
+                No hay prospectos clínicos indexados. ¡Sube un PDF como Admin primero!
+              </div>
+            ) : (
+              <select
+                value={selectedPdfId}
+                onChange={(e) => setSelectedPdfId(e.target.value)}
+                className="w-full pl-12 pr-10 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:bg-[#0c1a30] transition-all appearance-none cursor-pointer"
+              >
+                {pdfs.map((pdf) => (
+                  <option key={pdf.id} value={pdf.id.toString()} className="bg-[#0A1628] text-white">
+                    {pdf.filename}
+                  </option>
+                ))}
+              </select>
+            )}
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white font-bold">▼</div>
           </div>
         </div>
 
         {/* Dynamic Content Area */}
         <div className="flex-1 flex flex-col justify-center min-h-0 overflow-y-auto">
-          {error && state === 'error' && (
+          {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl flex items-center gap-3 text-sm font-medium mb-4">
               <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-              {error}
-              <button onClick={handleNewQuery} className="ml-auto text-xs font-bold bg-red-500/20 px-3 py-1 rounded-lg hover:bg-red-500/30 transition-colors">
+              <span>{error}</span>
+              <button onClick={loadPDFs} className="ml-auto text-xs font-bold bg-red-500/20 px-3 py-1 rounded-lg hover:bg-red-500/30 transition-colors">
                 Reintentar
               </button>
             </div>
@@ -83,12 +122,12 @@ export function PDFAssistantPanel() {
           {state === 'processing' && (
             <div className="flex flex-col items-center justify-center space-y-6 py-12">
               <Loader2 className="w-16 h-16 text-violet-400 animate-spin" />
-              <p className="text-violet-400 font-medium tracking-widest text-sm animate-pulse uppercase">
-                Procesando con Inteligencia Artificial...
+              <p className="text-violet-400 font-bold tracking-widest text-sm animate-pulse uppercase">
+                IA Analizando Base Vectorial...
               </p>
-              {medicationContext && (
-                <p className="text-slate-500 text-xs">
-                  Analizando contexto: {medicationContext}
+              {selectedPdfId && (
+                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">
+                  Analizando: {pdfs.find(p => p.id.toString() === selectedPdfId)?.filename}
                 </p>
               )}
             </div>
@@ -97,18 +136,18 @@ export function PDFAssistantPanel() {
           {state === 'idle' && !responseData && (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <div className="w-20 h-20 rounded-full bg-violet-500/10 flex items-center justify-center mb-6 border border-violet-500/20">
-                <BrainCircuit className="w-10 h-10 text-violet-400" />
+                <HelpCircle className="w-10 h-10 text-violet-400" />
               </div>
-              <p className="text-slate-400 text-sm max-w-xs">
-                Ingrese el contexto arriba y formule su pregunta abajo para interactuar con la red neuronal.
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-wider max-w-xs">
+                Seleccione el prospecto médico arriba y formule su pregunta abajo para que FarmaVox lo analice.
               </p>
             </div>
           )}
 
           {state === 'responding' && responseData && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-4 animate-fade-in my-auto">
               {/* Visual Layout Card */}
-              <div className="bg-white p-6 rounded-2xl shadow-2xl border-t-4" style={{ borderColor: responseData.visual_layout.highlight_color }}>
+              <div className="bg-white p-6 rounded-3xl shadow-2xl border-t-8" style={{ borderColor: responseData.visual_layout.highlight_color }}>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <BrainCircuit className="w-8 h-8" style={{ color: responseData.visual_layout.highlight_color }} />
@@ -131,9 +170,9 @@ export function PDFAssistantPanel() {
                 </ul>
 
                 {/* Voice Response */}
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex gap-3 items-center">
-                  <Mic className="w-5 h-5 text-slate-400 flex-shrink-0" />
-                  <p className="text-sm text-slate-500 italic">
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex gap-3 items-center">
+                  <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse"></div>
+                  <p className="text-xs font-bold text-slate-500 italic">
                     "{responseData.voice_response}"
                   </p>
                 </div>
@@ -149,13 +188,13 @@ export function PDFAssistantPanel() {
               type="text"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Ej. ¿Cuáles son los efectos secundarios?"
-              disabled={state === 'processing' || !medicationContext.trim()}
-              className="w-full pl-6 pr-14 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:bg-white/15 transition-all backdrop-blur-sm disabled:opacity-50"
+              placeholder="Pregunte sobre el medicamento... ej: ¿Cuáles son las dosis recomendadas?"
+              disabled={state === 'processing' || pdfs.length === 0}
+              className="w-full pl-6 pr-14 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:bg-white/15 transition-all backdrop-blur-sm disabled:opacity-50 text-sm"
             />
             <button
               type="submit"
-              disabled={!question.trim() || state === 'processing' || !medicationContext.trim()}
+              disabled={!question.trim() || state === 'processing' || pdfs.length === 0}
               className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-violet-500 flex items-center justify-center text-white disabled:opacity-50 disabled:bg-slate-600 hover:bg-violet-600 transition-colors"
             >
               <Send className="w-5 h-5" />

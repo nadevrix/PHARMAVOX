@@ -1,55 +1,124 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '../../components/ui/Card';
 import { DataTable } from '../../components/ui/DataTable';
-import { UserPlus, User, X } from 'lucide-react';
+import { UserPlus, User, X, Trash2, Shield, UserCheck } from 'lucide-react';
+import { api, type UserResponse } from '../../services/api';
 
 export function Users() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [users] = useState([
-    { id: 1, name: 'Carlos Mendoza', email: 'carlos.mendoza@farmacorp.com', role: 'Operario', status: 'Activo' },
-    { id: 2, name: 'Ana Gómez', email: 'ana.gomez@farmacorp.com', role: 'Operario', status: 'Activo' },
-    { id: 3, name: 'Dra. Sofía Chávez', email: 'sofia.chavez@farmacorp.com', role: 'QA / Admin', status: 'Activo' },
-    { id: 4, name: 'Pedro Salas', email: 'pedro.salas@farmacorp.com', role: 'Operario', status: 'Baja' },
-  ]);
+  const [users, setUsers] = useState<UserResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  
+  // Form State
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState<'pharmacist' | 'admin'>('pharmacist');
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const data = await api.getUsers('admin');
+      setUsers(data);
+    } catch (err) {
+      setError('Error al obtener la lista de usuarios. Asegúrese de tener rol de Administrador.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName || !email || !password) return;
+
+    setSubmitting(true);
+    setError('');
+    try {
+      await api.createUser({
+        full_name: fullName,
+        email,
+        role,
+        password,
+        timezone: 'America/Mexico_City'
+      }, 'admin');
+
+      setFullName('');
+      setEmail('');
+      setPassword('');
+      setRole('pharmacist');
+      setIsModalOpen(false);
+      fetchUsers();
+    } catch (err: any) {
+      setError(err.message || 'Error al crear el usuario.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteUser = async (id: number) => {
+    if (!confirm('¿Está seguro de que desea eliminar a este usuario?')) return;
+    try {
+      await api.deleteUser(id, 'admin');
+      fetchUsers();
+    } catch (err) {
+      setError('Error al eliminar el usuario.');
+    }
+  };
 
   const columns = [
     {
       header: 'Usuario',
-      accessor: (row: any) => (
-        <div className="flex items-center space-x-3">
-          <div className="bg-slate-100 p-2 rounded-full">
-            <User className="w-4 h-4 text-slate-600" />
+      accessor: (row: UserResponse) => (
+        <div className="flex items-center space-x-3 py-2">
+          <div className="bg-slate-100 p-2.5 rounded-full">
+            <User className="w-4 h-4 text-[#00385F]" />
           </div>
           <div>
-            <div className="font-bold text-slate-800">{row.name}</div>
-            <div className="text-xs text-slate-500">{row.email}</div>
+            <div className="font-bold text-slate-800">{row.full_name}</div>
+            <div className="text-xs text-slate-400">{row.email}</div>
           </div>
         </div>
       )
     },
     {
       header: 'Rol',
-      accessor: (row: any) => (
-        <span className={`px-2 py-1 rounded text-xs font-bold ${row.role === 'Operario' ? 'bg-slate-100 text-slate-700' : 'bg-blue-100 text-blue-700'
-          }`}>
-          {row.role.toUpperCase()}
-        </span>
+      accessor: (row: UserResponse) => (
+        <div className="flex items-center gap-1.5">
+          {row.role === 'admin' ? (
+            <span className="px-2.5 py-1 rounded bg-[#00385F]/15 text-[#00385F] text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+              <Shield className="w-3 h-3" /> QA / Admin
+            </span>
+          ) : (
+            <span className="px-2.5 py-1 rounded bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+              <UserCheck className="w-3 h-3" /> Operario (Zona Estéril)
+            </span>
+          )}
+        </div>
       )
     },
     {
       header: 'Estado',
-      accessor: (row: any) => (
-        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${row.status === 'Activo' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-          }`}>
-          {row.status.toUpperCase()}
+      accessor: () => (
+        <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider bg-emerald-100 text-emerald-700">
+          ACTIVO
         </span>
       )
     },
     {
       header: 'Acciones',
-      accessor: () => (
-        <button className="text-sm text-blue-600 font-medium hover:text-blue-800 transition-colors">
-          Editar
+      accessor: (row: UserResponse) => (
+        <button
+          onClick={() => handleDeleteUser(row.id)}
+          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+          title="Eliminar usuario"
+        >
+          <Trash2 className="w-4 h-4" />
         </button>
       )
     }
@@ -59,63 +128,113 @@ export function Users() {
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Gestión de Personal</h2>
-          <p className="text-sm text-slate-500 mt-1">Administra los accesos de operarios y personal de QA.</p>
+          <h2 className="text-2xl font-black text-[#00385F] uppercase" style={{ letterSpacing: '-0.02em' }}>Gestión de Personal</h2>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Administra los accesos de operarios y administradores de QA.</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          className="flex items-center space-x-2 bg-[#004b7c] hover:bg-[#00385f] text-white px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md"
         >
           <UserPlus className="w-4 h-4" />
           <span>Nuevo Usuario</span>
         </button>
       </div>
 
-      <Card className="p-0 overflow-hidden">
-        <DataTable data={users} columns={columns} />
+      {error && (
+        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold rounded-xl uppercase tracking-wider">
+          🚨 {error}
+        </div>
+      )}
+
+      <Card className="p-0 overflow-hidden border border-slate-200 shadow-sm rounded-2xl">
+        {loading ? (
+          <div className="p-12 text-center text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">
+            Cargando base de datos de personal...
+          </div>
+        ) : users.length === 0 ? (
+          <div className="p-12 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">
+            No hay usuarios registrados en el sistema.
+          </div>
+        ) : (
+          <DataTable data={users} columns={columns} />
+        )}
       </Card>
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md border border-slate-200 shadow-2xl rounded-3xl p-6 bg-white">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-slate-900">Crear Nuevo Usuario</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <h3 className="text-sm font-black text-[#00385F] uppercase tracking-wider">Registrar Nuevo Usuario</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-50">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form className="space-y-4">
+            <form onSubmit={handleCreateUser} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo</label>
-                <input type="text" className="w-full border-slate-300 rounded-lg py-2 px-3 border focus:ring-blue-500 focus:border-blue-500" placeholder="Ej. Juan Pérez" />
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Nombre Completo</label>
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full border-slate-200 rounded-xl py-2.5 px-3.5 border focus:ring-[#004b7c] focus:border-[#004b7c] text-sm text-slate-800 placeholder:text-slate-300 transition-all"
+                  placeholder="Ej. Juan Pérez"
+                />
               </div>
+              
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Correo Electrónico</label>
-                <input type="email" className="w-full border-slate-300 rounded-lg py-2 px-3 border focus:ring-blue-500 focus:border-blue-500" placeholder="juan.perez@farmacorp.com" />
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Correo Electrónico</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full border-slate-200 rounded-xl py-2.5 px-3.5 border focus:ring-[#004b7c] focus:border-[#004b7c] text-sm text-slate-800 placeholder:text-slate-300 transition-all"
+                  placeholder="juan.perez@pharmavox.com"
+                />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Rol en el Sistema</label>
-                <select className="w-full border-slate-300 rounded-lg py-2 px-3 border focus:ring-blue-500 focus:border-blue-500">
-                  <option>Operario (Zona Estéril)</option>
-                  <option>Administrador / QA</option>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Contraseña de Acceso</label>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full border-slate-200 rounded-xl py-2.5 px-3.5 border focus:ring-[#004b7c] focus:border-[#004b7c] text-sm text-slate-800 placeholder:text-slate-300 transition-all"
+                  placeholder="Mínimo 6 caracteres"
+                  minLength={6}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Rol de Seguridad</label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as 'pharmacist' | 'admin')}
+                  className="w-full border-slate-200 rounded-xl py-2.5 px-3.5 border focus:ring-[#004b7c] focus:border-[#004b7c] text-sm text-slate-800 transition-all"
+                >
+                  <option value="pharmacist">Operario (Zona Estéril)</option>
+                  <option value="admin">Administrador / QA</option>
                 </select>
               </div>
+
               <div className="pt-4 flex justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
+                  className="px-4 py-2.5 text-xs font-black uppercase tracking-wider text-slate-500 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-all"
                 >
                   Cancelar
                 </button>
                 <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white bg-[#004b7c] rounded-xl hover:bg-[#00385f] transition-all shadow-md disabled:opacity-50"
                 >
-                  Guardar Usuario
+                  {submitting ? 'Creando...' : 'Guardar Usuario'}
                 </button>
               </div>
             </form>
